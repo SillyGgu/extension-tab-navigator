@@ -1,0 +1,319 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Extension Tab Navigator  —  style.css  v3
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── CSS 변수: 다크 테마 (기본) ────────────────────────────────────────── */
+#etn-nav.etn-theme-dark {
+    --etn-bg:           rgba(22, 24, 30, 0.92);
+    --etn-bg2:          rgba(30, 33, 42, 0.88);
+    --etn-border:       rgba(255, 255, 255, 0.10);
+    --etn-accent:       #5b9cf6;
+    --etn-accent-bg:    rgba(91, 156, 246, 0.18);
+    --etn-text:         #e0e4ef;
+    --etn-text-dim:     rgba(200, 210, 230, 0.55);
+    --etn-icon-bg:      rgba(255, 255, 255, 0.06);
+    --etn-hover-bg:     rgba(255, 255, 255, 0.09);
+    --etn-hover-border: rgba(255, 255, 255, 0.22);
+    --etn-active-text:  #ffffff;
+    --etn-pin-bg:       rgba(20, 22, 30, 0.90);
+    --etn-shadow:       0 4px 24px rgba(0,0,0,0.45);
+}
+
+/* ── CSS 변수: 라이트 테마 ─────────────────────────────────────────────── */
+#etn-nav.etn-theme-light {
+    --etn-bg:           rgba(245, 247, 252, 0.97);
+    --etn-bg2:          rgba(235, 238, 248, 0.95);
+    --etn-border:       rgba(0, 0, 0, 0.10);
+    --etn-accent:       #2563eb;
+    --etn-accent-bg:    rgba(37, 99, 235, 0.12);
+    --etn-text:         #1e2233;
+    --etn-text-dim:     rgba(30, 34, 51, 0.50);
+    --etn-icon-bg:      rgba(0, 0, 0, 0.05);
+    --etn-hover-bg:     rgba(0, 0, 0, 0.06);
+    --etn-hover-border: rgba(0, 0, 0, 0.18);
+    --etn-active-text:  #1e2233;
+    --etn-pin-bg:       rgba(230, 233, 245, 0.95);
+    --etn-shadow:       0 2px 12px rgba(0,0,0,0.12);
+}
+
+/* ── Nav container ─────────────────────────────────────────────────────── */
+#etn-nav {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 8px;
+    font-family: inherit;
+}
+
+/* ═══ TOOLBAR ══════════════════════════════════════════════════════════════ */
+#etn-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    box-shadow: var(--etn-shadow);
+}
+
+.etn-toolbar-label,
+.etn-toolbar-value {
+    font-size: 0.68rem;
+    color: var(--etn-text-dim);
+    white-space: nowrap;
+    flex-shrink: 0;
+    user-select: none;
+}
+.etn-toolbar-value { min-width: 34px; }
+
+#etn-width-slider {
+    flex: 1;
+    min-width: 60px;
+    max-width: 160px;
+    height: 3px;
+    cursor: pointer;
+    accent-color: var(--etn-accent);
+}
+
+.etn-toolbar-sep {
+    flex: 1;
+}
+
+/* ── 테마 토글 버튼 ────────────────────────────────────────────────────── */
+.etn-toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--etn-border);
+    background: var(--etn-icon-bg);
+    color: var(--etn-text-dim);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+}
+.etn-toolbar-btn:hover {
+    background: var(--etn-hover-bg);
+    color: var(--etn-text);
+    border-color: var(--etn-hover-border);
+}
+
+/* ═══ SCROLL BAR (아이콘 트랙) ═════════════════════════════════════════════ */
+#etn-scroll-bar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-border) transparent;
+    padding: 6px 4px 8px;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 10px;
+}
+
+#etn-scroll-bar.dragging { cursor: grabbing; }
+
+#etn-scroll-bar::-webkit-scrollbar        { height: 3px; }
+#etn-scroll-bar::-webkit-scrollbar-track  { background: transparent; }
+#etn-scroll-bar::-webkit-scrollbar-thumb  {
+    background: var(--etn-border);
+    border-radius: 2px;
+}
+
+/* ── Icon track ─────────────────────────────────────────────────────────── */
+#etn-icon-track {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: flex-start;
+    width: max-content;
+    padding: 2px 4px;
+}
+
+/* ═══ ICON BUTTON ══════════════════════════════════════════════════════════ */
+.etn-icon-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 9px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    min-width: 58px;
+    max-width: 78px;
+    border: 1px solid transparent;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+    /* [FIX 2] 기본 텍스트/아이콘 색 명시 */
+    color: var(--etn-text);
+    background: transparent;
+}
+
+.etn-icon-btn:hover {
+    background: var(--etn-hover-bg);
+    border-color: var(--etn-hover-border);
+    color: var(--etn-text); /* 다크/라이트 모두 테마에 맞는 색 유지 */
+}
+
+.etn-icon-btn.etn-active {
+    background: var(--etn-accent-bg);
+    border-color: var(--etn-accent);
+    color: var(--etn-active-text);
+}
+
+/* 핀 아이콘 아래 점 */
+.etn-icon-btn.etn-pinned::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--etn-accent);
+    opacity: 0.9;
+}
+
+/* ── Icon inner (아이콘 박스) ─────────────────────────────────────────── */
+/* [FIX 2] 아이콘 배경색을 테마 변수로 지정 — 흰 배경에 흰 아이콘 문제 해결 */
+.etn-icon-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    font-size: 1.1rem;
+    color: inherit;          /* 부모(etn-icon-btn)의 색상 상속 */
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.etn-icon-btn:hover .etn-icon-inner {
+    background: var(--etn-hover-bg);
+    border-color: var(--etn-hover-border);
+}
+
+.etn-icon-btn.etn-active .etn-icon-inner {
+    background: var(--etn-accent-bg);
+    border-color: var(--etn-accent);
+    color: var(--etn-accent);
+}
+
+/* ── Pin dot ────────────────────────────────────────────────────────────── */
+.etn-pin-dot {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--etn-pin-bg);
+    border: 1px solid var(--etn-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+    cursor: pointer;
+    z-index: 2;
+    color: var(--etn-text-dim);
+}
+
+.etn-icon-btn:hover .etn-pin-dot,
+.etn-icon-btn.etn-pinned .etn-pin-dot {
+    opacity: 1;
+}
+
+.etn-pin-dot:hover {
+    background: var(--etn-accent);
+    color: #fff !important;
+    border-color: transparent;
+}
+
+.etn-icon-btn.etn-pinned .etn-pin-dot {
+    color: var(--etn-accent);
+}
+
+/* ── Label ──────────────────────────────────────────────────────────────── */
+.etn-icon-label {
+    font-size: 0.63rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 74px;
+    line-height: 1.2;
+    color: inherit;
+    opacity: 0.75;
+    transition: opacity 0.15s;
+}
+
+.etn-icon-btn:hover .etn-icon-label  { opacity: 0.95; }
+.etn-icon-btn.etn-active .etn-icon-label { opacity: 1; }
+
+/* ═══ PANEL AREA ═══════════════════════════════════════════════════════════ */
+/* [FIX 1] 중앙 정렬 — JS에서 width를 지정할 때 margin auto가 동작하도록 */
+#etn-panel-area {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    transition: width 0.18s ease;
+    background: var(--etn-bg2);
+    border: 1px solid var(--etn-border);
+    border-radius: 8px;
+    padding: 12px 14px 14px;
+    box-sizing: border-box;
+    box-shadow: var(--etn-shadow);
+}
+
+/* ── Divider (panel-area의 margin-top으로 대체됨) ───────────────────────── */
+#etn-nav::after { content: ''; display: none; }
+
+/* ═══ DRAWER OVERRIDES ═════════════════════════════════════════════════════ */
+
+/* v4: wrapper 전체를 data 속성 또는 inline style로 제어
+   혹시 클래스 방식 잔존하는 경우를 대비한 fallback */
+.inline-drawer-content.etn-force-show { display: block !important; }
+.inline-drawer-content.etn-force-hide { display: none !important; }
+
+/* 컬럼을 단일 컬럼으로 만들기 */
+.etn-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: unset !important;
+}
+
+/* inline-drawer 내부 border/margin 정리 */
+#etn-panel-area .inline-drawer {
+    border: none !important;
+    margin: 0 !important;
+}
+
+/* 헤더는 JS에서 inline style로 숨기지만 CSS도 보강 */
+#etn-panel-area .inline-drawer-header {
+    display: none !important;
+}
+
+/* ═══ MOBILE ════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+    .etn-icon-btn   { min-width: 50px; max-width: 64px; padding: 5px 7px 5px; }
+    .etn-icon-inner { width: 28px; height: 28px; font-size: 0.95rem; }
+    .etn-icon-label { font-size: 0.58rem; max-width: 60px; }
+    #etn-toolbar    { flex-wrap: wrap; }
+}
