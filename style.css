@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Extension Tab Navigator  —  style.css  v3
+   Extension Tab Navigator 
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── CSS 변수: 다크 테마 (기본) ────────────────────────────────────────── */
@@ -155,7 +155,6 @@
     position: relative;
     flex-shrink: 0;
     transition: background 0.15s, border-color 0.15s;
-    /* [FIX 2] 기본 텍스트/아이콘 색 명시 */
     color: var(--etn-text);
     background: transparent;
 }
@@ -163,7 +162,7 @@
 .etn-icon-btn:hover {
     background: var(--etn-hover-bg);
     border-color: var(--etn-hover-border);
-    color: var(--etn-text); /* 다크/라이트 모두 테마에 맞는 색 유지 */
+    color: var(--etn-text); 
 }
 
 .etn-icon-btn.etn-active {
@@ -187,7 +186,6 @@
 }
 
 /* ── Icon inner (아이콘 박스) ─────────────────────────────────────────── */
-/* [FIX 2] 아이콘 배경색을 테마 변수로 지정 — 흰 배경에 흰 아이콘 문제 해결 */
 .etn-icon-inner {
     position: relative;
     display: flex;
@@ -199,7 +197,7 @@
     background: var(--etn-icon-bg);
     border: 1px solid var(--etn-border);
     font-size: 1.1rem;
-    color: inherit;          /* 부모(etn-icon-btn)의 색상 상속 */
+    color: inherit;        
     transition: background 0.15s, border-color 0.15s;
 }
 
@@ -268,7 +266,6 @@
 .etn-icon-btn.etn-active .etn-icon-label { opacity: 1; }
 
 /* ═══ PANEL AREA ═══════════════════════════════════════════════════════════ */
-/* [FIX 1] 중앙 정렬 — JS에서 width를 지정할 때 margin auto가 동작하도록 */
 #etn-panel-area {
     width: 100%;
     margin-left: auto;
@@ -282,30 +279,25 @@
     box-shadow: var(--etn-shadow);
 }
 
-/* ── Divider (panel-area의 margin-top으로 대체됨) ───────────────────────── */
+/* ── Divider ───────────────────────── */
 #etn-nav::after { content: ''; display: none; }
 
 /* ═══ DRAWER OVERRIDES ═════════════════════════════════════════════════════ */
 
-/* v4: wrapper 전체를 data 속성 또는 inline style로 제어
-   혹시 클래스 방식 잔존하는 경우를 대비한 fallback */
 .inline-drawer-content.etn-force-show { display: block !important; }
 .inline-drawer-content.etn-force-hide { display: none !important; }
 
-/* 컬럼을 단일 컬럼으로 만들기 */
 .etn-col {
     width: 100% !important;
     max-width: 100% !important;
     flex: unset !important;
 }
 
-/* inline-drawer 내부 border/margin 정리 */
 #etn-panel-area .inline-drawer {
     border: none !important;
     margin: 0 !important;
 }
 
-/* 헤더는 JS에서 inline style로 숨기지만 CSS도 보강 */
 #etn-panel-area .inline-drawer-header {
     display: none !important;
 }

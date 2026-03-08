@@ -1,5 +1,5 @@
 // Extension Tab Navigator for SillyTavern
-// 원본 V1 open/close 로직 기반 — 패널 표시는 inline-drawer-content 클래스 토글만 사용
+
 (function () {
     'use strict';
 
@@ -91,7 +91,7 @@
         const col2 = document.getElementById('extensions_settings2');
         if (!col1) return;
 
-        // ── 원본 V1 방식: .inline-drawer 전체 수집 ──────────────────────────
+        // ── .inline-drawer 전체 수집 ──────────────────────────
         const allDrawers = [];
         [col1, col2].forEach(function(col) {
             if (!col) return;
@@ -104,7 +104,7 @@
 
         if (allDrawers.length === 0) return;
 
-        // label 탐색: b/strong → 직계 텍스트 노드 → data-i18n → fallback
+        // label 탐색: b/strong
         function getLabel(drawer, i) {
             const header = drawer.querySelector('.inline-drawer-header');
             if (!header) return 'Extension ' + (i + 1);
@@ -154,24 +154,20 @@
         col1.classList.add('etn-col');
         if (col2) col2.classList.add('etn-col');
 
-        // ── 원본 V1 방식: 헤더 hide + content class 토글 ────────────────────
+        // ── 헤더 hide + content class 토글 ────────────────────
         panels.forEach(function(p) {
             p.drawerEl.classList.add('etn-managed-drawer');
             p.contentEl.classList.add('etn-force-hide');
         });
 
-        // ── 패널로 잡히지 않은 col 직계 자식 숨기기 (orphan) ────────────────
-        // inline-drawer-content 를 건드리지 않고, wrapper 자체를 숨김
         var registeredDrawers = new Set(panels.map(function(p) { return p.drawerEl; }));
         [col1, col2].forEach(function(col) {
             if (!col) return;
             Array.from(col.children).forEach(function(child) {
                 if (child.tagName === 'STYLE' || child.tagName === 'SCRIPT' || child.tagName === 'HR') return;
-                // 이 child 안에 등록된 drawer가 하나도 없으면 orphan → 숨기기
                 var hasRegistered = child.querySelector && Array.from(
                     child.querySelectorAll('.inline-drawer')
                 ).some(function(d) { return registeredDrawers.has(d); });
-                // child 자신이 등록된 drawer인 경우도 포함
                 if (!hasRegistered && !registeredDrawers.has(child)) {
                     child.style.setProperty('display', 'none', 'important');
                 }
@@ -189,7 +185,6 @@
 
         setupScrollInteractions(nav.querySelector('#etn-scroll-bar'));
 
-        // 너비 슬라이더
         const slider   = nav.querySelector('#etn-width-slider');
         const widthVal = nav.querySelector('#etn-width-value');
         applyPanelWidth(loadWidth());
@@ -200,7 +195,6 @@
             saveWidth(w);
         });
 
-        // 테마 토글
         nav.querySelector('#etn-theme-toggle').addEventListener('click', function() {
             const isDark = document.getElementById('etn-nav').classList.contains('etn-theme-dark');
             const next = isDark ? 'light' : 'dark';

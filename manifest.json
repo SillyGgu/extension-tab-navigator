@@ -1,12 +1,12 @@
 {
-    "display_name": "Extension Tab Navigator",
+    "display_name": "확장서랍 매니저",
     "loading_order": 999,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
-    "author": "Custom",
+    "author": "SillyGgu",
     "version": "1.0.0",
-    "homePage": "",
+    "homePage": "https://github.com/SillyGgu/extension-tab-navigator",
     "auto_update": false
 }
