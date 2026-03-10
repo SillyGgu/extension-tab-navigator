@@ -3,10 +3,12 @@
 (function () {
     'use strict';
 
-    const STORAGE_KEY = 'etn_pinned_v2';
-    const ACTIVE_KEY  = 'etn_active';
-    const WIDTH_KEY   = 'etn_panel_width';
-    const THEME_KEY   = 'etn_theme';
+	const STORAGE_KEY  = 'etn_pinned_v2';
+	const ACTIVE_KEY   = 'etn_active';
+	const WIDTH_KEY    = 'etn_panel_width';
+	const THEME_KEY    = 'etn_theme';
+	const LABELS_KEY   = 'etn_custom_labels';
+	const DUMMY_KEY    = 'etn_dummy_pins';
 
     let pinnedIds = loadPinned();
     let activeId  = null;
@@ -17,6 +19,22 @@
         try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
         catch { return []; }
     }
+	function loadCustomLabels() {
+		try { return JSON.parse(localStorage.getItem(LABELS_KEY)) || {}; }
+		catch { return {}; }
+	}
+	function saveCustomLabels(obj) {
+		try { localStorage.setItem(LABELS_KEY, JSON.stringify(obj)); }
+		catch(e) {}
+	}
+	function loadDummyPins() {
+		try { return JSON.parse(localStorage.getItem(DUMMY_KEY)) || []; }
+		catch { return []; }
+	}
+	function saveDummyPins(arr) {
+		try { localStorage.setItem(DUMMY_KEY, JSON.stringify(arr)); }
+		catch(e) {}
+	}
     function savePinned() {
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(pinnedIds)); }
         catch(e) {}
@@ -40,10 +58,10 @@
         catch(e) {}
     }
 
-    function slugify(text) {
-        return text.trim().replace(/\s+/g, '_').replace(/[^\w가-힣]/g, '').toLowerCase()
-            || 'ext_' + Math.random().toString(36).slice(2, 7);
-    }
+	function slugify(text) {
+		return text.trim().replace(/\s+/g, '_').replace(/[^\w가-힣]/g, '').toLowerCase()
+			|| 'ext_' + Math.random().toString(36).slice(2, 7);
+	}
 
     function guessIcon(label) {
         const l = label.toLowerCase();
@@ -118,12 +136,14 @@
             return 'Extension ' + (i + 1);
         }
 
-        panels = allDrawers.map(function(item, i) {
-            const label     = getLabel(item.drawer, i);
-            const id        = slugify(label) + '_' + i;
-            const contentEl = item.drawer.querySelector('.inline-drawer-content');
-            return { id: id, label: label, icon: guessIcon(label), contentEl: contentEl, drawerEl: item.drawer, col: item.col };
-        });
+		var customLabels = loadCustomLabels();
+		panels = allDrawers.map(function(item, i) {
+			const label        = getLabel(item.drawer, i);
+			const id           = slugify(label);
+			const contentEl    = item.drawer.querySelector('.inline-drawer-content');
+			const displayLabel = customLabels[id] || label;
+			return { id: id, label: displayLabel, originalLabel: label, icon: guessIcon(label), contentEl: contentEl, drawerEl: item.drawer, col: item.col };
+		});
 
         const currentTheme = loadTheme();
 
@@ -131,19 +151,22 @@
         const nav = document.createElement('div');
         nav.id = 'etn-nav';
         nav.classList.add('etn-theme-' + currentTheme);
-        nav.innerHTML =
-            '<div id="etn-toolbar">' +
-                '<span class="etn-toolbar-label">너비</span>' +
-                '<input id="etn-width-slider" type="range" min="30" max="100" step="1" value="' + loadWidth() + '" />' +
-                '<span id="etn-width-value" class="etn-toolbar-value">' + loadWidth() + '%</span>' +
-                '<div class="etn-toolbar-sep"></div>' +
-                '<button id="etn-theme-toggle" class="etn-toolbar-btn" title="라이트 모드로 전환">' +
-                    '<i class="fa-solid ' + (currentTheme === 'dark' ? 'fa-sun' : 'fa-moon') + '"></i>' +
-                '</button>' +
-            '</div>' +
-            '<div id="etn-scroll-bar"><div id="etn-icon-track"></div></div>' +
-            '<div id="etn-panel-area"></div>';
-
+		nav.innerHTML =
+			'<div id="etn-toolbar">' +
+				'<span class="etn-toolbar-label">너비</span>' +
+				'<input id="etn-width-slider" type="range" min="30" max="100" step="1" value="' + loadWidth() + '" />' +
+				'<span id="etn-width-value" class="etn-toolbar-value">' + loadWidth() + '%</span>' +
+				'<div class="etn-toolbar-sep"></div>' +
+				'<button id="etn-settings-btn" class="etn-toolbar-btn" title="설정">' +
+					'<i class="fa-solid fa-gear"></i>' +
+				'</button>' +
+				'<button id="etn-theme-toggle" class="etn-toolbar-btn" title="라이트 모드로 전환">' +
+					'<i class="fa-solid ' + (currentTheme === 'dark' ? 'fa-sun' : 'fa-moon') + '"></i>' +
+				'</button>' +
+			'</div>' +
+			'<div id="etn-scroll-bar"><div id="etn-icon-track"></div></div>' +
+			'<div id="etn-panel-area"></div>';
+			
         const parent = col1.parentElement;
         parent.insertBefore(nav, col1);
 
@@ -201,6 +224,19 @@
             saveTheme(next);
             applyTheme(next);
         });
+		nav.querySelector('#etn-settings-btn').addEventListener('pointerdown', function(e) {
+			e.stopPropagation();
+		});
+		nav.querySelector('#etn-settings-btn').addEventListener('click', function(e) {
+			e.stopPropagation();
+			var existing = document.getElementById('etn-settings-popup');
+			if (existing) {
+				closeSettingsPopup();
+			} else {
+				openSettingsPopup();
+			}
+		});
+	syncDummyPins();	
     }
 
     // ── Panel width ────────────────────────────────────────────────────────────
@@ -298,6 +334,280 @@
         renderIcons(track);
         setActive(activeId);
     }
+	
+	function openSettingsPopup() {
+		if (document.getElementById('etn-settings-popup')) {
+			closeSettingsPopup();
+			return;
+		}
+
+		var customLabels = loadCustomLabels();
+		var dummyPins    = loadDummyPins();
+
+		// 현재 실제 패널 + 더미 합쳐서 목록 구성
+		var allItems = panels.map(function(p) {
+			return { id: p.id, label: customLabels[p.id] || p.label, originalLabel: p.label, isDummy: false };
+		});
+		dummyPins.forEach(function(d) {
+			if (!allItems.find(function(x) { return x.id === d.id; })) {
+				allItems.push({ id: d.id, label: customLabels[d.id] || d.label, originalLabel: d.label, isDummy: true });
+			}
+		});
+
+		// 고정된 항목 순서대로 정렬 (고정된것 먼저, 나머지는 원래 순서)
+		var orderedItems = [
+			...pinnedIds.map(function(id) { return allItems.find(function(x) { return x.id === id; }); }).filter(Boolean),
+			...allItems.filter(function(x) { return !isPinned(x.id); })
+		];
+
+		var popup = document.createElement('div');
+		popup.id = 'etn-settings-popup';
+
+		function renderPopupContent() {
+			var customLabels = loadCustomLabels();
+			var dummyPins    = loadDummyPins();
+
+			var allItems = panels.map(function(p) {
+				return { id: p.id, label: customLabels[p.id] || p.originalLabel, originalLabel: p.originalLabel, isDummy: false };
+			});
+			dummyPins.forEach(function(d) {
+				if (!allItems.find(function(x) { return x.id === d.id; })) {
+					allItems.push({ id: d.id, label: customLabels[d.id] || d.label, originalLabel: d.label, isDummy: true });
+				}
+			});
+
+			var orderedItems = [
+				...pinnedIds.map(function(id) { return allItems.find(function(x) { return x.id === id; }); }).filter(Boolean),
+				...allItems.filter(function(x) { return !isPinned(x.id); })
+			];
+
+			popup.innerHTML =
+				'<div id="etn-sp-header">' +
+					'<span id="etn-sp-title"><i class="fa-solid fa-gear"></i> 설정</span>' +
+					'<button id="etn-sp-close"><i class="fa-solid fa-xmark"></i></button>' +
+				'</div>' +
+				'<div id="etn-sp-body">' +
+					'<p class="etn-sp-section-title">고정 항목 순서 / 이름 변경</p>' +
+					'<p class="etn-sp-hint">고정된 항목은 위에 표시되며 드래그로 순서를 변경할 수 있습니다.<br>🔴 는 삭제된 extension의 더미 데이터입니다.</p>' +
+					'<ul id="etn-sp-list">' +
+					orderedItems.map(function(item) {
+						var pinned = isPinned(item.id);
+						var hasCustom = item.label !== item.originalLabel;
+						var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+						var moveButtons = '';
+						if (isTouchDevice && pinned) {
+							var isFirst = pinnedIds.indexOf(item.id) === 0;
+							var isLast  = pinnedIds.indexOf(item.id) === pinnedIds.length - 1;
+							moveButtons =
+								'<button class="etn-sp-move-up" data-id="' + item.id + '" title="위로" style="' + (isFirst ? 'opacity:0.25;pointer-events:none;' : '') + '">' +
+									'<i class="fa-solid fa-chevron-up"></i>' +
+								'</button>' +
+								'<button class="etn-sp-move-down" data-id="' + item.id + '" title="아래로" style="' + (isLast ? 'opacity:0.25;pointer-events:none;' : '') + '">' +
+									'<i class="fa-solid fa-chevron-down"></i>' +
+								'</button>';
+						}
+						return '<li class="etn-sp-item' + (item.isDummy ? ' etn-sp-dummy' : '') + (pinned ? ' etn-sp-pinned' : '') + '" data-id="' + item.id + '" draggable="' + (pinned && !isTouchDevice ? 'true' : 'false') + '">' +
+							(isTouchDevice
+								? moveButtons
+								: '<span class="etn-sp-drag-handle' + (pinned ? '' : ' etn-sp-drag-disabled') + '" title="' + (pinned ? '드래그하여 순서 변경' : '고정된 항목만 순서 변경 가능') + '"><i class="fa-solid fa-grip-vertical"></i></span>'
+							) +
+							'<span class="etn-sp-badge">' + (item.isDummy ? '🔴' : (pinned ? '📌' : '')) + '</span>' +
+							'<div class="etn-sp-label-wrap">' +
+								'<span class="etn-sp-orig-label">' + escapeHtml(item.originalLabel) + '</span>' +
+								'<input class="etn-sp-label-input" type="text" value="' + escapeHtml(item.label) + '" data-id="' + item.id + '" data-orig="' + escapeHtml(item.originalLabel) + '" placeholder="표시 이름 (비우면 원본 사용)" />' +
+							'</div>' +
+							'<button class="etn-sp-pin-btn' + (pinned ? ' active' : '') + '" data-id="' + item.id + '" title="' + (pinned ? '고정 해제' : '고정') + '">' +
+								'<i class="fa-solid fa-thumbtack' + (pinned ? '' : ' fa-rotate-90') + '"></i>' +
+							'</button>' +
+							'<button class="etn-sp-del-btn" data-id="' + item.id + '" title="목록에서 제거">' +
+								'<i class="fa-solid fa-trash"></i>' +
+							'</button>' +
+						'</li>';
+					}).join('') +
+					'</ul>' +
+				'</div>' +
+				'<div id="etn-sp-footer">' +
+					'<button id="etn-sp-save"><i class="fa-solid fa-check"></i> 저장</button>' +
+				'</div>';
+
+			popup.querySelector('#etn-sp-close').addEventListener('click', closeSettingsPopup);
+
+			// 이름 저장 (저장 버튼)
+			popup.querySelector('#etn-sp-save').addEventListener('click', function() {
+				var labels = loadCustomLabels();
+				popup.querySelectorAll('.etn-sp-label-input').forEach(function(inp) {
+					var id  = inp.dataset.id;
+					var val = inp.value.trim();
+					var panel = panels.find(function(p) { return p.id === id; });
+					var orig  = panel ? panel.originalLabel : id;
+					if (val && val !== orig) {
+						labels[id] = val;
+					} else {
+						delete labels[id];
+					}
+				});
+				saveCustomLabels(labels);
+				panels.forEach(function(p) {
+					if (labels[p.id]) p.label = labels[p.id];
+					else p.label = p.originalLabel;
+				});
+				renderIcons(track);
+				closeSettingsPopup();
+			});
+			popup.querySelectorAll('.etn-sp-pin-btn').forEach(function(btn) {
+				btn.addEventListener('click', function(e) {
+					e.stopPropagation();
+					var id = btn.dataset.id;
+					togglePin(id);
+					renderPopupContent();
+				});
+			});
+
+			// 삭제 버튼
+			popup.querySelectorAll('.etn-sp-del-btn').forEach(function(btn) {
+				btn.addEventListener('click', function(e) {
+					e.stopPropagation();
+					var id = btn.dataset.id;
+					if (isPinned(id)) {
+						pinnedIds = pinnedIds.filter(function(x) { return x !== id; });
+						savePinned();
+					}
+					var dummies = loadDummyPins().filter(function(d) { return d.id !== id; });
+					saveDummyPins(dummies);
+					var lbl = loadCustomLabels();
+					delete lbl[id];
+					saveCustomLabels(lbl);
+					renderIcons(track);
+					renderPopupContent();
+				});
+			});
+
+			// 드래그 앤 드롭
+			var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+			if (!isTouchDevice) {
+				var dragSrcId = null;
+				var allDraggables = popup.querySelectorAll('.etn-sp-item[draggable="true"]');
+
+				function clearDropIndicators() {
+					popup.querySelectorAll('.etn-sp-item').forEach(function(x) {
+						x.classList.remove('etn-sp-dragover', 'etn-sp-drop-above', 'etn-sp-drop-below');
+					});
+				}
+
+				allDraggables.forEach(function(li) {
+					li.addEventListener('dragstart', function(e) {
+						dragSrcId = li.dataset.id;
+						li.classList.add('etn-sp-dragging');
+						e.dataTransfer.effectAllowed = 'move';
+					});
+					li.addEventListener('dragend', function() {
+						li.classList.remove('etn-sp-dragging');
+						clearDropIndicators();
+					});
+					li.addEventListener('dragover', function(e) {
+						e.preventDefault();
+						if (li.dataset.id === dragSrcId || !isPinned(li.dataset.id)) return;
+						clearDropIndicators();
+						var rect = li.getBoundingClientRect();
+						var midY = rect.top + rect.height / 2;
+						if (e.clientY < midY) {
+							li.classList.add('etn-sp-drop-above');
+						} else {
+							li.classList.add('etn-sp-drop-below');
+						}
+					});
+					li.addEventListener('dragleave', function(e) {
+						if (li.contains(e.relatedTarget)) return;
+						li.classList.remove('etn-sp-drop-above', 'etn-sp-drop-below');
+					});
+					li.addEventListener('drop', function(e) {
+						e.preventDefault();
+						var isAbove = li.classList.contains('etn-sp-drop-above');
+						clearDropIndicators();
+						if (!dragSrcId || dragSrcId === li.dataset.id) return;
+						var toId = li.dataset.id;
+						if (!isPinned(toId)) return;
+						var fromIdx = pinnedIds.indexOf(dragSrcId);
+						var toIdx   = pinnedIds.indexOf(toId);
+						if (fromIdx === -1 || toIdx === -1) return;
+						pinnedIds.splice(fromIdx, 1);
+						var newToIdx = pinnedIds.indexOf(toId);
+						if (isAbove) {
+							pinnedIds.splice(newToIdx, 0, dragSrcId);
+						} else {
+							pinnedIds.splice(newToIdx + 1, 0, dragSrcId);
+						}
+						savePinned();
+						renderIcons(track);
+						renderPopupContent();
+					});
+				});
+			} else {
+				// 모바일: 화살표 버튼으로 순서 변경
+				popup.querySelectorAll('.etn-sp-move-up, .etn-sp-move-down').forEach(function(btn) {
+					btn.addEventListener('click', function(e) {
+						e.stopPropagation();
+						var id  = btn.dataset.id;
+						var dir = btn.classList.contains('etn-sp-move-up') ? -1 : 1;
+						if (!isPinned(id)) return;
+						var idx = pinnedIds.indexOf(id);
+						if (idx === -1) return;
+						var newIdx = idx + dir;
+						if (newIdx < 0 || newIdx >= pinnedIds.length) return;
+						pinnedIds.splice(idx, 1);
+						pinnedIds.splice(newIdx, 0, id);
+						savePinned();
+						renderIcons(track);
+						renderPopupContent();
+					});
+				});
+			}
+		}
+
+		renderPopupContent();
+
+		popup.addEventListener('click', function(e) { e.stopPropagation(); });
+		popup.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+		popup.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+
+		var nav = document.getElementById('etn-nav');
+		nav.appendChild(popup);
+
+		setTimeout(function() {
+			document.addEventListener('pointerdown', outsideClickHandler, true);
+		}, 0);
+	}
+
+	function outsideClickHandler(e) {
+		var popup = document.getElementById('etn-settings-popup');
+		if (!popup) { document.removeEventListener('pointerdown', outsideClickHandler, true); return; }
+		if (!popup.contains(e.target)) {
+			closeSettingsPopup();
+		}
+	}
+
+	function closeSettingsPopup() {
+		var popup = document.getElementById('etn-settings-popup');
+		if (popup) popup.remove();
+		document.removeEventListener('pointerdown', outsideClickHandler, true);
+	}
+
+	function escapeHtml(str) {
+		return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+	}
+
+	// 더미 데이터 동기화 
+	function syncDummyPins() {
+		var dummies = loadDummyPins();
+		pinnedIds.forEach(function(id) {
+			var panel = panels.find(function(p) { return p.id === id; });
+			if (!panel && !dummies.find(function(d) { return d.id === id; })) {
+				dummies.push({ id: id, label: id });
+				saveDummyPins(dummies);
+			}
+		});
+	}
 
     // ── Scroll interactions ────────────────────────────────────────────────────
     function setupScrollInteractions(scrollEl) {
@@ -313,20 +623,29 @@
             scrollEl.scrollLeft = sx - (e.touches[0].clientX - tx);
         }, { passive: true });
 
-        var isDown = false, startX = 0, scrollLeft = 0;
+        var isDown = false, startX = 0, scrollLeft = 0, didDrag = false;
         scrollEl.addEventListener('mousedown', function(e) {
             if (e.target.closest('.etn-icon-btn')) return;
-            isDown = true; scrollEl.classList.add('dragging');
+            if (e.target.closest('input, textarea, select, button, a')) return;
+            if (e.target.isContentEditable) return;
+            isDown = true;
+            didDrag = false;
+            scrollEl.classList.add('dragging');
             startX = e.pageX - scrollEl.offsetLeft;
             scrollLeft = scrollEl.scrollLeft;
         });
         document.addEventListener('mouseup', function() {
-            isDown = false; scrollEl.classList.remove('dragging');
+            isDown = false;
+            didDrag = false;
+            scrollEl.classList.remove('dragging');
         });
         scrollEl.addEventListener('mousemove', function(e) {
             if (!isDown) return;
+            const delta = e.pageX - scrollEl.offsetLeft - startX;
+            if (Math.abs(delta) > 3) didDrag = true;
+            if (!didDrag) return;
             e.preventDefault();
-            scrollEl.scrollLeft = scrollLeft - (e.pageX - scrollEl.offsetLeft - startX);
+            scrollEl.scrollLeft = scrollLeft - delta;
         });
     }
 

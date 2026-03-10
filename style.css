@@ -171,20 +171,6 @@
     color: var(--etn-active-text);
 }
 
-/* 핀 아이콘 아래 점 */
-.etn-icon-btn.etn-pinned::after {
-    content: '';
-    position: absolute;
-    bottom: 3px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--etn-accent);
-    opacity: 0.9;
-}
-
 /* ── Icon inner (아이콘 박스) ─────────────────────────────────────────── */
 .etn-icon-inner {
     position: relative;
@@ -308,4 +294,250 @@
     .etn-icon-inner { width: 28px; height: 28px; font-size: 0.95rem; }
     .etn-icon-label { font-size: 0.58rem; max-width: 60px; }
     #etn-toolbar    { flex-wrap: wrap; }
+}
+
+
+/* ═══ SETTINGS POPUP ════════════════════════════════════════════════════════ */
+#etn-settings-popup {
+    position: absolute;
+    top: 42px;
+    right: 0;
+    width: 360px;
+    max-width: 96vw;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 10px;
+    box-shadow: var(--etn-shadow);
+    z-index: 9999;
+    overflow: hidden;
+    font-size: 0.85rem;
+    color: var(--etn-text);
+}
+
+#etn-nav {
+    position: relative;
+}
+
+#etn-sp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--etn-border);
+    flex-shrink: 0;
+}
+
+#etn-sp-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--etn-text);
+}
+
+#etn-sp-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.9rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+#etn-sp-close:hover { color: var(--etn-text); background: var(--etn-hover-bg); }
+
+#etn-sp-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px 14px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-border) transparent;
+}
+
+.etn-sp-section-title {
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--etn-text-dim);
+    margin: 0 0 4px;
+}
+
+.etn-sp-hint {
+    font-size: 0.72rem;
+    color: var(--etn-text-dim);
+    margin: 0 0 10px;
+    line-height: 1.5;
+}
+
+#etn-sp-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.etn-sp-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 7px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: var(--etn-icon-bg);
+    transition: background 0.13s, border-color 0.13s;
+}
+
+.etn-sp-item.etn-sp-pinned {
+    border-color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+}
+
+.etn-sp-item.etn-sp-dummy {
+    opacity: 0.65;
+}
+
+.etn-sp-item.etn-sp-dragging { opacity: 0.4; }
+.etn-sp-item.etn-sp-dragover { border-color: var(--etn-accent) !important; background: var(--etn-accent-bg) !important; }
+
+.etn-sp-drag-handle {
+    cursor: grab;
+    color: var(--etn-text-dim);
+    font-size: 0.8rem;
+    padding: 0 2px;
+    flex-shrink: 0;
+}
+.etn-sp-drag-handle.etn-sp-drag-disabled {
+    cursor: default;
+    opacity: 0.25;
+}
+.etn-sp-drag-handle:active { cursor: grabbing; }
+
+.etn-sp-badge {
+    font-size: 0.75rem;
+    min-width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.etn-sp-label-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--etn-border);
+    color: var(--etn-text);
+    font-size: 0.82rem;
+    padding: 2px 4px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.etn-sp-label-input:focus { border-bottom-color: var(--etn-accent); }
+.etn-sp-label-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.etn-sp-orig-label {
+    font-size: 0.68rem;
+    color: var(--etn-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+    line-height: 1.2;
+}
+
+.etn-sp-label-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+.etn-sp-pin-btn,
+.etn-sp-del-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.75rem;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+    padding: 0;
+}
+.etn-sp-pin-btn:hover { color: var(--etn-accent); background: var(--etn-accent-bg); border-color: var(--etn-accent); }
+.etn-sp-pin-btn.active { color: var(--etn-accent); }
+.etn-sp-del-btn:hover  { color: #f87171; background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.4); }
+
+#etn-sp-footer {
+    padding: 8px 14px 10px;
+    border-top: 1px solid var(--etn-border);
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+#etn-sp-save {
+    background: var(--etn-accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 16px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: opacity 0.15s;
+}
+#etn-sp-save:hover { opacity: 0.85; }
+
+.etn-sp-item.etn-sp-drop-above {
+    border-top: 2px solid var(--etn-accent) !important;
+}
+.etn-sp-item.etn-sp-drop-below {
+    border-bottom: 2px solid var(--etn-accent) !important;
+}
+.etn-sp-item.etn-sp-dragging {
+    opacity: 0.35;
+    background: var(--etn-accent-bg) !important;
+}
+
+/* ═══ MOBILE ARROW BUTTONS ══════════════════════════════════════════════════ */
+.etn-sp-move-up,
+.etn-sp-move-down {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.75rem;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+    padding: 0;
+}
+.etn-sp-move-up:hover,
+.etn-sp-move-down:hover {
+    color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+    border-color: var(--etn-accent);
 }
