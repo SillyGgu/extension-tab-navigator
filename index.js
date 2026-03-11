@@ -289,7 +289,9 @@
                 if (e.target.closest('.etn-pin-dot')) return;
                 setActive(p.id);
             });
-            btn.querySelector('.etn-pin-dot').addEventListener('click', function(e) {
+			btn.querySelector('.etn-pin-dot').addEventListener('click', function(e) {
+				var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+				if (isTouchDevice) { e.stopPropagation(); return; }
                 e.stopPropagation();
                 togglePin(p.id);
             });

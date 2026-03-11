@@ -159,10 +159,12 @@
     background: transparent;
 }
 
-.etn-icon-btn:hover {
-    background: var(--etn-hover-bg);
-    border-color: var(--etn-hover-border);
-    color: var(--etn-text); 
+@media (hover: hover) and (pointer: fine) {
+    .etn-icon-btn:hover {
+        background: var(--etn-hover-bg);
+        border-color: var(--etn-hover-border);
+        color: var(--etn-text);
+    }
 }
 
 .etn-icon-btn.etn-active {
@@ -187,11 +189,12 @@
     transition: background 0.15s, border-color 0.15s;
 }
 
-.etn-icon-btn:hover .etn-icon-inner {
-    background: var(--etn-hover-bg);
-    border-color: var(--etn-hover-border);
+@media (hover: hover) and (pointer: fine) {
+    .etn-icon-btn:hover .etn-icon-inner {
+        background: var(--etn-hover-bg);
+        border-color: var(--etn-hover-border);
+    }
 }
-
 .etn-icon-btn.etn-active .etn-icon-inner {
     background: var(--etn-accent-bg);
     border-color: var(--etn-accent);
@@ -219,10 +222,16 @@
     color: var(--etn-text-dim);
 }
 
-.etn-icon-btn:hover .etn-pin-dot,
+@media (hover: hover) and (pointer: fine) {
+    .etn-icon-btn:hover .etn-pin-dot {
+        opacity: 1;
+    }
+}
+
 .etn-icon-btn.etn-pinned .etn-pin-dot {
     opacity: 1;
 }
+
 
 .etn-pin-dot:hover {
     background: var(--etn-accent);
@@ -248,7 +257,9 @@
     transition: opacity 0.15s;
 }
 
-.etn-icon-btn:hover .etn-icon-label  { opacity: 0.95; }
+@media (hover: hover) and (pointer: fine) {
+    .etn-icon-btn:hover .etn-icon-label { opacity: 0.95; }
+}
 .etn-icon-btn.etn-active .etn-icon-label { opacity: 1; }
 
 /* ═══ PANEL AREA ═══════════════════════════════════════════════════════════ */
