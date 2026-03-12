@@ -1253,3 +1253,33 @@
     max-height: 260px;
 }
 
+
+/* ── 폴더 순서 변경 버튼 ─────────────────────────────────────────── */
+.qrext-fr-move-up,
+.qrext-fr-move-down {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+}
+.qrext-fr-move-up:hover,
+.qrext-fr-move-down:hover {
+    color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+    border-color: var(--etn-accent);
+}
+.qrext-fr-move-up:disabled,
+.qrext-fr-move-down:disabled {
+    opacity: 0.2;
+    pointer-events: none;
+}
