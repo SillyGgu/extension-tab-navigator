@@ -717,20 +717,23 @@
     function installGlobalSearch() {
         const cont = getQrContainer();
         if (!cont) return;
-        const globalDiv = cont.querySelector('#qr--global');
-        if (!globalDiv) return;
-        const setListItems = globalDiv.querySelectorAll('.qr--item');
-        if (!setListItems.length) return;
+        const targetSections = ['#qr--global', '#qr--chat', '#qr--character'];
+        let anyFound = false;
+        targetSections.forEach(selector => {
+            const sectionDiv = cont.querySelector(selector);
+            if (!sectionDiv) return;
+            const setListItems = sectionDiv.querySelectorAll('.qr--item');
+            if (!setListItems.length) return;
+            anyFound = true;
+            setListItems.forEach(item => {
+                const nativeSel = item.querySelector('select.qr--set');
+                if (!nativeSel || nativeSel.dataset.qrextGlobalHooked) return;
+                nativeSel.dataset.qrextGlobalHooked = '1';
+                nativeSel.classList.add('qrext-hidden-select');
 
-        setListItems.forEach(item => {
-            const nativeSel = item.querySelector('select.qr--set');
-            if (!nativeSel || nativeSel.dataset.qrextGlobalHooked) return;
-            nativeSel.dataset.qrextGlobalHooked = '1';
-            nativeSel.classList.add('qrext-hidden-select');
-
-            const wrap = document.createElement('div');
-            wrap.className = 'qrext-custom-dropdown qrext-global-dropdown';
-            nativeSel.insertAdjacentElement('afterend', wrap);
+                const wrap = document.createElement('div');
+                wrap.className = 'qrext-custom-dropdown qrext-global-dropdown';
+                nativeSel.insertAdjacentElement('afterend', wrap);
 
             function buildGlobalDropdown() {
                 const options = Array.from(nativeSel.options).map(o => o.value).filter(Boolean);
@@ -806,7 +809,8 @@
                 obs.observe(nativeSel, { childList: true });
             }
 
-            buildGlobalDropdown();
+                buildGlobalDropdown();
+            });
         });
     }
 
@@ -1328,7 +1332,58 @@
                 if (!document.getElementById('qrext-editor-dropdown')) installEditorDropdown();
             }
         });
-        observer.observe(document.getElementById('extensions_settings') || document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        observer.observe(document.getElementById('extensions_settings') || document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+
+        function attachQrContainerWatcher() {
+            const qrRoot = document.getElementById('qr_container');
+            if (!qrRoot || qrRoot._qrextContainerWatching) return;
+            qrRoot._qrextContainerWatching = true;
+            const w = new MutationObserver(() => {
+                if (!qrEnabled) return;
+                setTimeout(() => {
+                    installGlobalSearch();
+                    if (!document.getElementById('qrext-editor-dropdown')) installEditorDropdown();
+                }, 150);
+            });
+            w.observe(qrRoot, { subtree: true, childList: true });
+        }
+        const qrContainerTimer = setInterval(() => {
+            if (document.getElementById('qr_container')) {
+                attachQrContainerWatcher();
+                clearInterval(qrContainerTimer);
+            }
+        }, 300);
+
+        function attachQrListWatcher() {
+            const qrGlobal  = document.querySelector('#qr--global');
+            const qrChat    = document.querySelector('#qr--chat');
+            const qrCharacter = document.querySelector('#qr--character');
+            [qrGlobal, qrChat, qrCharacter].forEach(el => {
+                if (!el || el._qrextWatching) return;
+                el._qrextWatching = true;
+                const w = new MutationObserver(() => {
+                    if (!qrEnabled) return;
+                    setTimeout(() => {
+                        installGlobalSearch();
+                        if (!document.getElementById('qrext-editor-dropdown')) installEditorDropdown();
+                    }, 150);
+                });
+                w.observe(el, { subtree: true, childList: true });
+            });
+        }
+
+        const observer2 = new MutationObserver(() => {
+            if (!qrEnabled) return;
+            installQrToolbarButton();
+            attachQrListWatcher();
+            const qrVisible = document.querySelector('#qr_container .inline-drawer-content.etn-force-show');
+            if (qrVisible || document.querySelector('#qr_container')) {
+                installGlobalSearch();
+                if (!document.getElementById('qrext-editor-dropdown')) installEditorDropdown();
+            }
+        });
+        observer2.observe(document.getElementById('extensions_settings') || document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+        setTimeout(attachQrListWatcher, 1000);
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', qrExtInit);
