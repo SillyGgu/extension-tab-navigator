@@ -104,7 +104,7 @@
     border-color: var(--etn-hover-border);
 }
 
-/* ═══ SCROLL BAR (아이콘 트랙) ═════════════════════════════════════════════ */
+/* ═══ SCROLL BAR ═════════════════════════════════════════════ */
 #etn-scroll-bar {
     overflow-x: auto;
     overflow-y: hidden;
@@ -173,7 +173,7 @@
     color: var(--etn-active-text);
 }
 
-/* ── Icon inner (아이콘 박스) ─────────────────────────────────────────── */
+/* ── Icon inner ─────────────────────────────────────────── */
 .etn-icon-inner {
     position: relative;
     display: flex;
@@ -277,6 +277,7 @@
 }
 
 /* ── Divider ───────────────────────── */
+
 #etn-nav::after { content: ''; display: none; }
 
 /* ═══ DRAWER OVERRIDES ═════════════════════════════════════════════════════ */
@@ -529,6 +530,7 @@
 }
 
 /* ═══ MOBILE ARROW BUTTONS ══════════════════════════════════════════════════ */
+
 .etn-sp-move-up,
 .etn-sp-move-down {
     background: none;
@@ -552,3 +554,702 @@
     background: var(--etn-accent-bg);
     border-color: var(--etn-accent);
 }
+
+/* ── 툴바 버튼 ──────────────────────────────────────────────────────── */
+#qrext-toggle-btn {
+    position: relative;
+}
+#qrext-toggle-btn.qrext-active {
+    background: var(--etn-accent-bg) !important;
+    border-color: var(--etn-accent) !important;
+    color: var(--etn-accent) !important;
+}
+
+/* ── 숨겨진 네이티브 셀렉트 ─────────────────────────────────────────── */
+.qrext-hidden-select {
+    display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Global QR Search
+   ═══════════════════════════════════════════════════════════════════════ */
+   
+.qrext-search-wrap {
+    margin: 6px 0 8px;
+}
+.qrext-search-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    transition: border-color 0.15s;
+}
+.qrext-search-inner:focus-within {
+    border-color: var(--etn-accent);
+}
+.qrext-search-icon {
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+.qrext-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--etn-text);
+    font-size: 0.8rem;
+    min-width: 0;
+}
+.qrext-search-input::placeholder { color: var(--etn-text-dim); }
+.qrext-search-clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+    padding: 0 2px;
+    transition: color 0.13s, opacity 0.13s;
+    flex-shrink: 0;
+}
+.qrext-search-clear:hover { color: var(--etn-text); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Edit QR 커스텀 드롭다운
+   ═══════════════════════════════════════════════════════════════════════ */
+.qrext-custom-dropdown {
+    position: relative;
+    width: 100%;
+    min-width: 180px;
+    flex: 1;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+}
+
+/* 트리거 버튼 */
+.qrext-dd-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    color: var(--etn-text);
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+.qrext-dd-trigger:hover {
+    border-color: var(--etn-hover-border);
+    background: var(--etn-hover-bg);
+}
+.qrext-dd-selected-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+}
+.qrext-dd-arrow {
+    font-size: 0.68rem;
+    color: var(--etn-text-dim);
+    flex-shrink: 0;
+    transition: transform 0.18s;
+}
+
+/* 드롭다운 패널 */
+.qrext-dd-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    min-width: 200px;
+    max-height: 320px;
+    display: flex;
+    flex-direction: column;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 8px;
+    box-shadow: var(--etn-shadow);
+    z-index: 10000;
+    overflow: visible;
+}
+/* 패널 내 검색 */
+.qrext-dd-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px 6px;
+    border-bottom: 1px solid var(--etn-border);
+    flex-shrink: 0;
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+}
+.qrext-dd-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--etn-text);
+    font-size: 0.8rem;
+}
+.qrext-dd-search::placeholder { color: var(--etn-text-dim); }
+
+/* 리스트 */
+.qrext-dd-list {
+    overflow-y: auto;
+    max-height: 260px;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-border) transparent;
+    padding: 4px 0;
+}
+.qrext-dd-list::-webkit-scrollbar       { width: 4px; }
+.qrext-dd-list::-webkit-scrollbar-thumb { background: var(--etn-border); border-radius: 2px; }
+
+/* 그룹 레이블 */
+.qrext-dd-group-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--etn-text-dim);
+    padding: 6px 12px 3px;
+    font-weight: 600;
+    user-select: none;
+}
+
+/* 아이템 */
+.qrext-dd-item {
+    padding: 5px 14px;
+    cursor: pointer;
+    color: var(--etn-text);
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.1s;
+}
+.qrext-dd-item:hover        { background: var(--etn-hover-bg); }
+.qrext-dd-item-active       { color: var(--etn-accent); font-weight: 600; }
+.qrext-dd-item-active::before {
+    content: '✓ ';
+    font-size: 0.72rem;
+}
+
+/* 빈 상태 */
+.qrext-dd-empty {
+    padding: 12px 14px;
+    color: var(--etn-text-dim);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+/* ── 폴더 ─────────────────────────────────────────────────────────── */
+.qrext-dd-folder {
+    margin-bottom: 2px;
+}
+.qrext-dd-folder-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px 5px 12px;
+    cursor: pointer;
+    color: var(--etn-text);
+    font-size: 0.82rem;
+    user-select: none;
+    transition: background 0.1s;
+}
+.qrext-dd-folder-header:hover { background: var(--etn-hover-bg); }
+.qrext-folder-icon { color: var(--etn-accent); font-size: 0.78rem; flex-shrink: 0; }
+.qrext-dd-folder-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrext-dd-folder-count {
+    font-size: 0.68rem;
+    background: var(--etn-accent-bg);
+    color: var(--etn-accent);
+    border-radius: 9px;
+    padding: 1px 6px;
+    flex-shrink: 0;
+}
+.qrext-folder-chevron { font-size: 0.62rem; color: var(--etn-text-dim); flex-shrink: 0; transition: transform 0.15s; }
+
+.qrext-dd-folder-items { padding-left: 4px; }
+.qrext-dd-folder-items .qrext-dd-item { padding-left: 28px; }
+.qrext-dd-folder-items.qrext-dd-folded { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   QR 확장 팝업
+   ═══════════════════════════════════════════════════════════════════════ */
+#qrext-popup {
+    position: absolute;
+    top: 42px;
+    right: 56px; /* 설정 버튼 왼쪽 */
+    width: 380px;
+    max-width: calc(100vw - 16px);
+    max-height: 75vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 10px;
+    box-shadow: var(--etn-shadow);
+    z-index: 9998;
+    overflow: hidden;
+    font-size: 0.85rem;
+    color: var(--etn-text);
+}
+
+@media (max-width: 600px) {
+    #qrext-popup {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: 14px 14px 0 0;
+    }
+}
+
+.qrext-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--etn-border);
+    flex-shrink: 0;
+}
+.qrext-popup-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--etn-text);
+}
+.qrext-popup-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.9rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+.qrext-popup-close:hover { color: var(--etn-text); background: var(--etn-hover-bg); }
+
+.qrext-popup-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px 14px 14px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-border) transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ── 섹션 ────────────────────────────────────────────────────────── */
+.qrext-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.qrext-section-title {
+    font-weight: 700;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--etn-text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* ── 토글 스위치 ──────────────────────────────────────────────────── */
+.qrext-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 7px;
+    cursor: pointer;
+    gap: 12px;
+    user-select: none;
+    transition: background 0.13s;
+}
+.qrext-toggle-row:hover { background: var(--etn-hover-bg); }
+.qrext-toggle-row > span { font-size: 0.83rem; color: var(--etn-text); }
+
+.qrext-toggle {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--etn-border);
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.qrext-toggle-on { background: var(--etn-accent) !important; }
+.qrext-toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.18s, transform 0.18s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.qrext-toggle-on .qrext-toggle-knob { left: 18px; }
+
+/* ── 새 폴더 버튼 ────────────────────────────────────────────────── */
+.qrext-new-folder-btn {
+    background: var(--etn-accent-bg);
+    border: 1px solid var(--etn-accent);
+    color: var(--etn-accent);
+    border-radius: 5px;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.15s;
+    font-weight: 600;
+}
+.qrext-new-folder-btn:hover { opacity: 0.8; }
+
+/* ── 폴더 힌트 ──────────────────────────────────────────────────── */
+.qrext-folder-hint {
+    font-size: 0.71rem;
+    color: var(--etn-text-dim);
+    line-height: 1.5;
+}
+
+/* ── 폴더 행 ────────────────────────────────────────────────────── */
+.qrext-folder-row {
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.13s;
+}
+.qrext-folder-row:not(.qrext-ungrouped):hover { border-color: var(--etn-hover-border); }
+
+.qrext-folder-row-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--etn-border);
+    background: var(--etn-bg2);
+}
+.qrext-fr-icon { font-size: 0.8rem; color: var(--etn-accent); flex-shrink: 0; }
+.qrext-fr-name { flex: 1; font-weight: 600; font-size: 0.83rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrext-fr-count {
+    font-size: 0.68rem;
+    background: var(--etn-accent-bg);
+    color: var(--etn-accent);
+    border-radius: 9px;
+    padding: 1px 7px;
+    flex-shrink: 0;
+}
+
+.qrext-fr-rename,
+.qrext-fr-delete {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+}
+.qrext-fr-rename:hover { color: var(--etn-accent); background: var(--etn-accent-bg); border-color: var(--etn-accent); }
+.qrext-fr-delete:hover { color: #f87171; background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.4); }
+
+/* ── 세트 아이템 ─────────────────────────────────────────────────── */
+.qrext-fr-sets {
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 36px;
+}
+.qrext-fr-set-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 5px;
+    font-size: 0.8rem;
+    color: var(--etn-text);
+    cursor: grab;
+    transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+}
+.qrext-fr-set-item:hover { border-color: var(--etn-hover-border); background: var(--etn-hover-bg); }
+.qrext-fr-set-item.qrext-fr-dragging { opacity: 0.35; }
+.qrext-fr-drag { color: var(--etn-text-dim); font-size: 0.72rem; flex-shrink: 0; }
+.qrext-fr-set-item > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrext-fr-remove-set {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.7rem;
+    padding: 2px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: color 0.13s;
+}
+.qrext-fr-remove-set:hover { color: #f87171; }
+
+/* ── 드롭 존 ─────────────────────────────────────────────────────── */
+.qrext-fr-drop-zone {
+    border: 1.5px dashed var(--etn-border);
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    color: var(--etn-text-dim);
+    text-align: center;
+    transition: border-color 0.13s, background 0.13s, color 0.13s;
+    user-select: none;
+    margin-top: 2px;
+}
+.qrext-fr-drop-zone.qrext-drop-active {
+    border-color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+    color: var(--etn-accent);
+}
+
+/* ── 빈 상태 ─────────────────────────────────────────────────────── */
+.qrext-empty-hint {
+    color: var(--etn-text-dim);
+    font-size: 0.78rem;
+    text-align: center;
+    padding: 16px 0 8px;
+}
+
+/* ── 폴더 목록 컨테이너 ──────────────────────────────────────────── */
+#qrext-folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* 미분류 폴더 */
+.qrext-ungrouped .qrext-folder-row-header {
+    background: transparent;
+    border-bottom-color: var(--etn-border);
+}
+#qr--editor .qr--head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+}
+#qr--editor .qr--head .qr--title {
+    width: 100%;
+}
+#qr--editor .qr--head > .qr--actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+}
+#qr--editor .qr--head > .qr--actions .qrext-custom-dropdown {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+}
+#qr--editor .qr--head > .qr--actions .qrext-custom-dropdown .qrext-dd-trigger {
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+#qr--editor .qr--head > .qr--actions .qrext-custom-dropdown .qrext-dd-selected-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+#qr--editor .qr--head > .qr--actions .qrext-custom-dropdown .qrext-dd-panel {
+    min-width: 200px;
+    width: max-content;
+    max-width: 90vw;
+}
+
+/* ── 폴더 세트 추가 버튼 ─────────────────────────────────────────── */
+.qrext-fr-add-set-btn {
+    background: none;
+    border: 1px dashed var(--etn-border);
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+    width: 100%;
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+    margin-top: 2px;
+    box-sizing: border-box;
+}
+.qrext-fr-add-set-btn:hover {
+    color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+    border-color: var(--etn-accent);
+}
+
+/* ── 세트 선택 모달 ──────────────────────────────────────────────── */
+#qrext-set-pick-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    /* CSS 변수 상속을 위해 etn-nav 자식으로 마운트되므로 color 명시 불필요 */
+    color: var(--etn-text);
+}
+.qrext-set-pick-inner {
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    width: 320px;
+    max-width: 94vw;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--etn-text);
+    font-size: 0.85rem;
+    position: relative;
+    z-index: 1;
+}
+.qrext-set-pick-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--etn-border);
+    flex-shrink: 0;
+    font-weight: 600;
+}
+.qrext-set-pick-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.9rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+.qrext-set-pick-close:hover { color: var(--etn-text); background: var(--etn-hover-bg); }
+.qrext-set-pick-search-wrap {
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid var(--etn-border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+}
+.qrext-set-pick-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--etn-text);
+    font-size: 0.82rem;
+}
+.qrext-set-pick-search::placeholder { color: var(--etn-text-dim); }
+.qrext-set-pick-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 6px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-border) transparent;
+}
+.qrext-set-pick-item {
+    padding: 7px 16px;
+    cursor: pointer;
+    font-size: 0.83rem;
+    color: var(--etn-text);
+    transition: background 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.qrext-set-pick-item:hover { background: var(--etn-hover-bg); }
+.qrext-set-pick-item.qrext-pick-selected {
+    color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+}
+.qrext-set-pick-item.qrext-pick-selected:hover {
+    background: var(--etn-accent-bg);
+    filter: brightness(1.1);
+}
+.qrext-pick-icon {
+    font-size: 0.68rem;
+    flex-shrink: 0;
+    width: 10px;
+    text-align: center;
+}
+
+.qrext-set-pick-empty {
+    padding: 14px 16px;
+    color: var(--etn-text-dim);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.qrext-custom-dropdown {
+    overflow: visible !important;
+}
+#qr--editor .qr--actions .qrext-custom-dropdown .qrext-dd-panel {
+    min-width: 200px;
+    width: max-content;
+    max-width: 90vw;
+    overflow: visible;
+}
+#qr--editor .qr--actions .qrext-custom-dropdown .qrext-dd-panel .qrext-dd-list {
+    overflow-y: auto;
+    max-height: 260px;
+}
+

@@ -1,4 +1,3 @@
-// Extension Tab Navigator for SillyTavern
 
 (function () {
     'use strict';
@@ -122,7 +121,6 @@
 
         if (allDrawers.length === 0) return;
 
-        // label 탐색: b/strong
         function getLabel(drawer, i) {
             const header = drawer.querySelector('.inline-drawer-header');
             if (!header) return 'Extension ' + (i + 1);
@@ -302,7 +300,7 @@
         });
     }
 
-    // ── Activate panel — 원본 V1 방식 그대로 ──────────────────────────────────
+    // ── Activate panel ──────────────────────────────────
     function setActive(id) {
         activeId = id;
         sessionStorage.setItem(ACTIVE_KEY, id);
@@ -672,4 +670,667 @@
         if (!document.getElementById('etn-nav')) buildNavigator();
     }, 3000);
 
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QR UI Extension
+   - Global QR Sets 검색
+   - Edit QR 커스텀 드롭다운 (폴더 + 접기/열기)
+   - 툴바 QR 버튼 → 설정 팝업 (폴더 관리 포함)
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    /* ── 스토리지 키 ──────────────────────────────────────────── */
+    const QREXT_ENABLED_KEY = 'qrext_enabled';
+    const QREXT_FOLDERS_KEY = 'qrext_folders';
+    const QREXT_FOLDED_KEY  = 'qrext_folded';
+
+    /* ── 상태 ────────────────────────────────────────────────── */
+    let qrEnabled = loadQrEnabled();
+    let qrFolders = loadQrFolders();
+    let qrFolded  = loadQrFolded();
+
+    function loadQrEnabled()  { try { const v = localStorage.getItem(QREXT_ENABLED_KEY); return v === null ? true : v === 'true'; } catch { return true; } }
+    function saveQrEnabled(v) { try { localStorage.setItem(QREXT_ENABLED_KEY, String(v)); } catch {} }
+    function loadQrFolders()  { try { return JSON.parse(localStorage.getItem(QREXT_FOLDERS_KEY)) || {}; } catch { return {}; } }
+    function saveQrFolders()  { try { localStorage.setItem(QREXT_FOLDERS_KEY, JSON.stringify(qrFolders)); } catch {} }
+    function loadQrFolded()   { try { return new Set(JSON.parse(localStorage.getItem(QREXT_FOLDED_KEY)) || []); } catch { return new Set(); } }
+    function saveQrFolded()   { try { localStorage.setItem(QREXT_FOLDED_KEY, JSON.stringify([...qrFolded])); } catch {} }
+
+    function qrEscHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── QR DOM 탐색 ─────────────────────────────────────────── */
+    function getQrContainer()    { return document.getElementById('qr_container'); }
+    function getEditorSetSelect(){ const c = getQrContainer(); return c && c.querySelector('#qr--editor #qr--set'); }
+    function getAllSetNames() {
+        const sel = getEditorSetSelect();
+        if (!sel) return [];
+        return Array.from(sel.options).map(o => o.value).filter(Boolean);
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       1. Global QR Sets 검색
+    ───────────────────────────────────────────────────────── */
+    function installGlobalSearch() {
+        const cont = getQrContainer();
+        if (!cont) return;
+        const globalDiv = cont.querySelector('#qr--global');
+        if (!globalDiv) return;
+        const setListItems = globalDiv.querySelectorAll('.qr--item');
+        if (!setListItems.length) return;
+
+        setListItems.forEach(item => {
+            const nativeSel = item.querySelector('select.qr--set');
+            if (!nativeSel || nativeSel.dataset.qrextGlobalHooked) return;
+            nativeSel.dataset.qrextGlobalHooked = '1';
+            nativeSel.classList.add('qrext-hidden-select');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'qrext-custom-dropdown qrext-global-dropdown';
+            nativeSel.insertAdjacentElement('afterend', wrap);
+
+            function buildGlobalDropdown() {
+                const options = Array.from(nativeSel.options).map(o => o.value).filter(Boolean);
+                const selectedText = nativeSel.selectedOptions[0] ? nativeSel.selectedOptions[0].text : (options[0] || '세트 선택...');
+
+                wrap.innerHTML =
+                    '<div class="qrext-dd-trigger" role="button" tabindex="0">' +
+                        '<span class="qrext-dd-selected-text">' + qrEscHtml(selectedText) + '</span>' +
+                        '<i class="fa-solid fa-chevron-down qrext-dd-arrow"></i>' +
+                    '</div>' +
+                    '<div class="qrext-dd-panel" style="display:none;">' +
+                        '<div class="qrext-dd-search-wrap">' +
+                            '<i class="fa-solid fa-magnifying-glass"></i>' +
+                            '<input class="qrext-dd-search" type="text" placeholder="세트 검색..." autocomplete="off" />' +
+                        '</div>' +
+                        '<div class="qrext-dd-list"></div>' +
+                    '</div>';
+
+                const trigger  = wrap.querySelector('.qrext-dd-trigger');
+                const panel    = wrap.querySelector('.qrext-dd-panel');
+                const listEl   = wrap.querySelector('.qrext-dd-list');
+                const searchEl = wrap.querySelector('.qrext-dd-search');
+                const arrow    = wrap.querySelector('.qrext-dd-arrow');
+                let isOpen = false;
+
+                function openPanel()  { panel.style.display = 'block'; arrow.style.transform = 'rotate(180deg)'; isOpen = true; renderList(''); searchEl.value = ''; searchEl.focus(); }
+                function closePanel() { panel.style.display = 'none';  arrow.style.transform = ''; isOpen = false; }
+
+                trigger.addEventListener('click', () => isOpen ? closePanel() : openPanel());
+                trigger.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isOpen ? closePanel() : openPanel(); } });
+                searchEl.addEventListener('input', () => renderList(searchEl.value));
+
+                const outsideClose = e => { if (!wrap.contains(e.target)) closePanel(); };
+                document.addEventListener('pointerdown', outsideClose);
+
+                function selectOption(val) {
+                    nativeSel.value = val;
+                    nativeSel.dispatchEvent(new Event('change', { bubbles: true }));
+                    const opt = Array.from(nativeSel.options).find(o => o.value === val);
+                    wrap.querySelector('.qrext-dd-selected-text').textContent = opt ? opt.text : val;
+                    closePanel();
+                }
+
+                function renderList(query) {
+                    const q = query.trim().toLowerCase();
+                    listEl.innerHTML = '';
+                    const filtered = options.filter(v => !q || v.toLowerCase().includes(q));
+                    if (!filtered.length) {
+                        listEl.innerHTML = '<div class="qrext-dd-empty">검색 결과 없음</div>';
+                        return;
+                    }
+                    filtered.forEach(val => {
+                        const el = document.createElement('div');
+                        el.className = 'qrext-dd-item' + (val === nativeSel.value ? ' qrext-dd-item-active' : '');
+                        el.textContent = val;
+                        el.addEventListener('click', () => selectOption(val));
+                        listEl.appendChild(el);
+                    });
+                }
+
+                nativeSel.addEventListener('change', () => {
+                    const opt = nativeSel.selectedOptions[0];
+                    const txt = wrap.querySelector('.qrext-dd-selected-text');
+                    if (txt && opt) txt.textContent = opt.text;
+                });
+
+                const obs = new MutationObserver(() => {
+                    wrap.remove();
+                    delete nativeSel.dataset.qrextGlobalHooked;
+                    nativeSel.classList.remove('qrext-hidden-select');
+                    installGlobalSearch();
+                });
+                obs.observe(nativeSel, { childList: true });
+            }
+
+            buildGlobalDropdown();
+        });
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       2. Edit QR 커스텀 드롭다운
+    ───────────────────────────────────────────────────────── */
+    function installEditorDropdown() {
+        const cont = getQrContainer();
+        if (!cont) return;
+        const editorDiv = cont.querySelector('#qr--editor');
+        if (!editorDiv) return;
+        const nativeSel = editorDiv.querySelector('#qr--set');
+        if (!nativeSel || nativeSel.dataset.qrextHooked) return;
+        nativeSel.dataset.qrextHooked = '1';
+        nativeSel.classList.add('qrext-hidden-select');
+
+        const customWrap = document.createElement('div');
+        customWrap.className = 'qrext-custom-dropdown';
+        customWrap.id = 'qrext-editor-dropdown';
+        nativeSel.insertAdjacentElement('afterend', customWrap);
+
+        function buildDropdown() {
+            const allNames  = getAllSetNames();
+            const inFolder  = new Set();
+            Object.values(qrFolders).forEach(arr => arr.forEach(n => inFolder.add(n)));
+            const ungrouped = allNames.filter(n => !inFolder.has(n));
+            const selectedText = nativeSel.selectedOptions[0] ? nativeSel.selectedOptions[0].text : (nativeSel.value || '세트 선택...');
+
+            customWrap.innerHTML =
+                '<div class="qrext-dd-trigger" role="button" tabindex="0">' +
+                    '<span class="qrext-dd-selected-text">' + qrEscHtml(selectedText) + '</span>' +
+                    '<i class="fa-solid fa-chevron-down qrext-dd-arrow"></i>' +
+                '</div>' +
+                '<div class="qrext-dd-panel" style="display:none;">' +
+                    '<div class="qrext-dd-search-wrap">' +
+                        '<i class="fa-solid fa-magnifying-glass"></i>' +
+                        '<input class="qrext-dd-search" type="text" placeholder="세트 검색..." autocomplete="off" />' +
+                    '</div>' +
+                    '<div class="qrext-dd-list"></div>' +
+                '</div>';
+
+            const trigger  = customWrap.querySelector('.qrext-dd-trigger');
+            const panel    = customWrap.querySelector('.qrext-dd-panel');
+            const listEl   = customWrap.querySelector('.qrext-dd-list');
+            const searchEl = customWrap.querySelector('.qrext-dd-search');
+            const arrow    = customWrap.querySelector('.qrext-dd-arrow');
+            let isOpen = false;
+
+            function openPanel()  { panel.style.display = 'block'; arrow.style.transform = 'rotate(180deg)'; isOpen = true; renderDdList(''); searchEl.value = ''; searchEl.focus(); }
+            function closePanel() { panel.style.display = 'none';  arrow.style.transform = ''; isOpen = false; }
+
+            trigger.addEventListener('click', () => isOpen ? closePanel() : openPanel());
+            trigger.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isOpen ? closePanel() : openPanel(); } });
+            searchEl.addEventListener('input', () => renderDdList(searchEl.value));
+
+            const outsideClose = e => { if (!customWrap.contains(e.target)) closePanel(); };
+            document.addEventListener('pointerdown', outsideClose);
+
+            function selectSet(name) {
+                nativeSel.value = name;
+                nativeSel.dispatchEvent(new Event('change', { bubbles: true }));
+                const opt = Array.from(nativeSel.options).find(o => o.value === name);
+                customWrap.querySelector('.qrext-dd-selected-text').textContent = opt ? opt.text : name;
+                closePanel();
+            }
+
+            function renderDdList(query) {
+                const q = query.trim().toLowerCase();
+                listEl.innerHTML = '';
+
+                Object.entries(qrFolders).forEach(([fname, sets]) => {
+                    const filtered = sets.filter(s => allNames.includes(s) && (!q || s.toLowerCase().includes(q)));
+                    if (!filtered.length) return;
+                    const isFolded = qrFolded.has(fname);
+                    const folderEl = document.createElement('div');
+                    folderEl.className = 'qrext-dd-folder';
+                    folderEl.innerHTML =
+                        '<div class="qrext-dd-folder-header">' +
+                            '<i class="fa-solid ' + (isFolded ? 'fa-folder' : 'fa-folder-open') + ' qrext-folder-icon"></i>' +
+                            '<span class="qrext-dd-folder-name">' + qrEscHtml(fname) + '</span>' +
+                            '<span class="qrext-dd-folder-count">' + filtered.length + '</span>' +
+                            '<i class="fa-solid ' + (isFolded ? 'fa-chevron-right' : 'fa-chevron-down') + ' qrext-folder-chevron"></i>' +
+                        '</div>';
+                    const itemsEl = document.createElement('div');
+                    itemsEl.className = 'qrext-dd-folder-items' + (isFolded && !q ? ' qrext-dd-folded' : '');
+                    filtered.forEach(name => {
+                        const item = document.createElement('div');
+                        item.className = 'qrext-dd-item' + (name === nativeSel.value ? ' qrext-dd-item-active' : '');
+                        item.textContent = name;
+                        item.addEventListener('click', () => selectSet(name));
+                        itemsEl.appendChild(item);
+                    });
+                    folderEl.appendChild(itemsEl);
+                    folderEl.querySelector('.qrext-dd-folder-header').addEventListener('click', () => {
+                        if (q) return;
+                        if (qrFolded.has(fname)) qrFolded.delete(fname); else qrFolded.add(fname);
+                        saveQrFolded();
+                        renderDdList(searchEl.value);
+                    });
+                    listEl.appendChild(folderEl);
+                });
+
+                const ungroupedFiltered = ungrouped.filter(n => !q || n.toLowerCase().includes(q));
+                if (ungroupedFiltered.length) {
+                    if (Object.keys(qrFolders).length) {
+                        const lbl = document.createElement('div');
+                        lbl.className = 'qrext-dd-group-label';
+                        lbl.textContent = '미분류';
+                        listEl.appendChild(lbl);
+                    }
+                    ungroupedFiltered.forEach(name => {
+                        const item = document.createElement('div');
+                        item.className = 'qrext-dd-item' + (name === nativeSel.value ? ' qrext-dd-item-active' : '');
+                        item.textContent = name;
+                        item.addEventListener('click', () => selectSet(name));
+                        listEl.appendChild(item);
+                    });
+                }
+                if (!listEl.children.length) listEl.innerHTML = '<div class="qrext-dd-empty">검색 결과 없음</div>';
+            }
+        }
+
+        buildDropdown();
+
+        nativeSel.addEventListener('change', () => {
+            const opt = nativeSel.selectedOptions[0];
+            const dd = customWrap.querySelector('.qrext-dd-selected-text');
+            if (dd && opt) dd.textContent = opt.text;
+        });
+
+        const obs = new MutationObserver(() => {
+            customWrap.remove();
+            delete nativeSel.dataset.qrextHooked;
+            nativeSel.classList.remove('qrext-hidden-select');
+            installEditorDropdown();
+        });
+        obs.observe(nativeSel, { childList: true });
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       3. 툴바 버튼
+    ───────────────────────────────────────────────────────── */
+    function installQrToolbarButton() {
+        const toolbar = document.getElementById('etn-toolbar');
+        if (!toolbar || toolbar.querySelector('#qrext-toggle-btn')) return;
+        const settingsBtn = toolbar.querySelector('#etn-settings-btn');
+        const btn = document.createElement('button');
+        btn.id = 'qrext-toggle-btn';
+        btn.className = 'etn-toolbar-btn' + (qrEnabled ? ' qrext-active' : '');
+        btn.title = 'QR UI 확장 설정';
+        btn.innerHTML = '<i class="fa-solid fa-qrcode"></i>';
+        btn.addEventListener('pointerdown', e => e.stopPropagation());
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            document.getElementById('qrext-popup') ? closeQrextPopup() : openQrextPopup();
+        });
+        if (settingsBtn) settingsBtn.insertAdjacentElement('beforebegin', btn);
+        else toolbar.appendChild(btn);
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       4. QR 확장 팝업
+    ───────────────────────────────────────────────────────── */
+    function openQrextPopup() {
+        if (document.getElementById('qrext-popup')) return;
+        const nav = document.getElementById('etn-nav');
+        if (!nav) return;
+        const popup = document.createElement('div');
+        popup.id = 'qrext-popup';
+        renderQrextPopup(popup);
+        nav.appendChild(popup);
+        setTimeout(() => document.addEventListener('pointerdown', qrextOutsideHandler, true), 0);
+    }
+
+    function renderQrextPopup(popup) {
+        popup.innerHTML =
+            '<div class="qrext-popup-header">' +
+                '<span class="qrext-popup-title"><i class="fa-solid fa-qrcode"></i> QR UI 확장 설정</span>' +
+                '<button class="qrext-popup-close"><i class="fa-solid fa-xmark"></i></button>' +
+            '</div>' +
+            '<div class="qrext-popup-body">' +
+                '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">전체 기능</div>' +
+                    '<label class="qrext-toggle-row">' +
+                        '<span>QR UI 확장 활성화</span>' +
+                        '<div class="qrext-toggle ' + (qrEnabled ? 'qrext-toggle-on' : '') + '" id="qrext-main-toggle" role="switch" tabindex="0" aria-checked="' + qrEnabled + '">' +
+                            '<div class="qrext-toggle-knob"></div>' +
+                        '</div>' +
+                    '</label>' +
+                '</div>' +
+                '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">Edit QR 폴더 관리' +
+                        '<button class="qrext-new-folder-btn" id="qrext-new-folder-btn"><i class="fa-solid fa-plus"></i> 새 폴더</button>' +
+                    '</div>' +
+                    '<div class="qrext-folder-hint">세트 항목을 드래그해서 폴더로 이동할 수 있습니다.</div>' +
+                    '<div id="qrext-folder-list"></div>' +
+                '</div>' +
+            '</div>';
+
+        popup.querySelector('.qrext-popup-close').addEventListener('click', closeQrextPopup);
+
+        const toggle = popup.querySelector('#qrext-main-toggle');
+        const doToggle = () => {
+            qrEnabled = !qrEnabled;
+            saveQrEnabled(qrEnabled);
+            toggle.classList.toggle('qrext-toggle-on', qrEnabled);
+            toggle.setAttribute('aria-checked', String(qrEnabled));
+            document.getElementById('qrext-toggle-btn') && document.getElementById('qrext-toggle-btn').classList.toggle('qrext-active', qrEnabled);
+            qrEnabled ? applyQrExtension() : removeQrExtension();
+        };
+        toggle.addEventListener('click', doToggle);
+        toggle.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') doToggle(); });
+
+        popup.querySelector('#qrext-new-folder-btn').addEventListener('click', () => {
+            const name = prompt('새 폴더 이름:');
+            if (!name || !name.trim()) return;
+            const t = name.trim();
+            if (qrFolders[t]) { alert('이미 존재하는 이름입니다.'); return; }
+            qrFolders[t] = [];
+            saveQrFolders();
+            refreshQrFolderList(popup);
+        });
+
+        popup.addEventListener('click', e => e.stopPropagation());
+        popup.addEventListener('pointerdown', e => e.stopPropagation());
+
+        refreshQrFolderList(popup);
+    }
+
+    function refreshQrFolderList(popup) {
+        const listEl = popup.querySelector('#qrext-folder-list');
+        if (!listEl) return;
+        const allNames = getAllSetNames();
+        const inFolder = new Set();
+        Object.values(qrFolders).forEach(arr => arr.forEach(n => inFolder.add(n)));
+        const ungrouped = allNames.filter(n => !inFolder.has(n));
+
+        let html = '';
+        Object.entries(qrFolders).forEach(([fname, sets]) => {
+            const valid = sets.filter(s => allNames.includes(s));
+            html +=
+                '<div class="qrext-folder-row" data-fname="' + qrEscHtml(fname) + '">' +
+                    '<div class="qrext-folder-row-header">' +
+                        '<i class="fa-solid fa-folder qrext-fr-icon"></i>' +
+                        '<span class="qrext-fr-name">' + qrEscHtml(fname) + '</span>' +
+                        '<span class="qrext-fr-count">' + valid.length + '</span>' +
+                        '<button class="qrext-fr-rename" data-fname="' + qrEscHtml(fname) + '" title="이름 변경"><i class="fa-solid fa-pencil"></i></button>' +
+                        '<button class="qrext-fr-delete" data-fname="' + qrEscHtml(fname) + '" title="폴더 삭제"><i class="fa-solid fa-trash"></i></button>' +
+                    '</div>' +
+                    '<div class="qrext-fr-sets">' +
+                        valid.map(s =>
+                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + qrEscHtml(s) + '" data-folder="' + qrEscHtml(fname) + '">' +
+                                '<i class="fa-solid fa-grip-vertical qrext-fr-drag"></i>' +
+                                '<span>' + qrEscHtml(s) + '</span>' +
+                                '<button class="qrext-fr-remove-set" data-set="' + qrEscHtml(s) + '" data-folder="' + qrEscHtml(fname) + '" title="제거"><i class="fa-solid fa-xmark"></i></button>' +
+                            '</div>'
+                        ).join('') +
+                        '<div class="qrext-fr-drop-zone" data-folder="' + qrEscHtml(fname) + '">여기에 드롭하여 추가</div>' +
+                        '<button class="qrext-fr-add-set-btn" data-folder="' + qrEscHtml(fname) + '" title="세트 추가">' +
+                            '<i class="fa-solid fa-plus"></i> 세트 추가' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+        });
+
+        if (ungrouped.length) {
+            html +=
+                '<div class="qrext-folder-row qrext-ungrouped">' +
+                    '<div class="qrext-folder-row-header">' +
+                        '<i class="fa-solid fa-layer-group qrext-fr-icon" style="color:var(--etn-text-dim)"></i>' +
+                        '<span class="qrext-fr-name" style="color:var(--etn-text-dim)">미분류</span>' +
+                        '<span class="qrext-fr-count">' + ungrouped.length + '</span>' +
+                    '</div>' +
+                    '<div class="qrext-fr-sets">' +
+                        ungrouped.map(s =>
+                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + qrEscHtml(s) + '" data-folder="">' +
+                                '<i class="fa-solid fa-grip-vertical qrext-fr-drag"></i>' +
+                                '<span>' + qrEscHtml(s) + '</span>' +
+                            '</div>'
+                        ).join('') +
+                    '</div>' +
+                '</div>';
+        }
+
+        listEl.innerHTML = html || '<div class="qrext-empty-hint">QR 세트가 없습니다.</div>';
+        bindQrFolderEvents(popup);
+
+        // 드롭다운도 갱신
+        const dd = document.getElementById('qrext-editor-dropdown');
+        if (dd) { dd.remove(); const sel = document.querySelector('#qr--editor #qr--set'); if (sel) { delete sel.dataset.qrextHooked; sel.classList.remove('qrext-hidden-select'); } if (qrEnabled) installEditorDropdown(); }
+    }
+
+    function bindQrFolderEvents(popup) {
+        const listEl = popup.querySelector('#qrext-folder-list');
+        if (!listEl) return;
+
+        listEl.querySelectorAll('.qrext-fr-delete').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const fname = btn.dataset.fname;
+                if (!confirm('폴더 "' + fname + '"를 삭제할까요? (세트는 미분류로 이동됩니다)')) return;
+                delete qrFolders[fname];
+                saveQrFolders();
+                refreshQrFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-rename').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const fname = btn.dataset.fname;
+                const newName = prompt('새 폴더 이름:', fname);
+                if (!newName || !newName.trim() || newName.trim() === fname) return;
+                const t = newName.trim();
+                if (qrFolders[t]) { alert('이미 존재하는 이름입니다.'); return; }
+                qrFolders[t] = qrFolders[fname];
+                delete qrFolders[fname];
+                if (qrFolded.has(fname)) { qrFolded.delete(fname); qrFolded.add(t); saveQrFolded(); }
+                saveQrFolders();
+                refreshQrFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-remove-set').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const { set: setName, folder: fname } = btn.dataset;
+                if (!qrFolders[fname]) return;
+                qrFolders[fname] = qrFolders[fname].filter(s => s !== setName);
+                saveQrFolders();
+                refreshQrFolderList(popup);
+            });
+        });
+
+        // + 버튼으로 세트 추가 (모달)
+        listEl.querySelectorAll('.qrext-fr-add-set-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const fname = btn.dataset.folder;
+                openSetPickModal(fname, popup);
+            });
+        });
+
+        let dragSet = null, dragFrom = null;
+        listEl.querySelectorAll('.qrext-fr-set-item[draggable="true"]').forEach(item => {
+            item.addEventListener('dragstart', e => {
+                dragSet = item.dataset.set; dragFrom = item.dataset.folder;
+                item.classList.add('qrext-fr-dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', () => {
+                item.classList.remove('qrext-fr-dragging');
+                listEl.querySelectorAll('.qrext-fr-drop-zone').forEach(z => z.classList.remove('qrext-drop-active'));
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-drop-zone').forEach(zone => {
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('qrext-drop-active'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('qrext-drop-active'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('qrext-drop-active');
+                const toFolder = zone.dataset.folder;
+                if (!dragSet || !toFolder) return;
+                if (dragFrom && qrFolders[dragFrom]) qrFolders[dragFrom] = qrFolders[dragFrom].filter(s => s !== dragSet);
+                if (qrFolders[toFolder] && !qrFolders[toFolder].includes(dragSet)) qrFolders[toFolder].push(dragSet);
+                saveQrFolders();
+                refreshQrFolderList(popup);
+                dragSet = null; dragFrom = null;
+            });
+        });
+    }
+	
+    function openSetPickModal(fname, popup) {
+        if (document.getElementById('qrext-set-pick-modal')) return;
+        const allNames = getAllSetNames();
+        const already  = new Set(qrFolders[fname] || []);
+
+        const modal = document.createElement('div');
+        modal.id = 'qrext-set-pick-modal';
+
+		['click','pointerdown','mousedown','touchstart','touchend'].forEach(evtName => {
+			modal.addEventListener(evtName, e => {
+				if (e.target === modal) return;
+				e.stopPropagation();
+			});
+		});
+
+        function renderModal(query, preserveScroll) {
+            const listEl = modal.querySelector('.qrext-set-pick-list');
+            const scrollTop = (preserveScroll && listEl) ? listEl.scrollTop : 0;
+
+            const q = query.trim().toLowerCase();
+            const filtered = allNames.filter(n => !q || n.toLowerCase().includes(q));
+            const listHtml = filtered.length
+                ? filtered.map(n =>
+                    '<div class="qrext-set-pick-item' + (already.has(n) ? ' qrext-pick-selected' : '') + '" data-set="' + qrEscHtml(n) + '">' +
+                        '<i class="fa-solid ' + (already.has(n) ? 'fa-check' : 'fa-plus') + ' qrext-pick-icon"></i>' +
+                        qrEscHtml(n) +
+                    '</div>'
+                ).join('')
+                : '<div class="qrext-set-pick-empty">검색 결과 없음</div>';
+
+            if (!modal.querySelector('.qrext-set-pick-inner')) {
+                // 최초 렌더
+                modal.innerHTML =
+                    '<div class="qrext-set-pick-inner">' +
+                        '<div class="qrext-set-pick-header">' +
+                            '<span><i class="fa-solid fa-folder" style="margin-right:6px;color:var(--etn-accent)"></i>' + qrEscHtml(fname) + ' — 세트 추가</span>' +
+                            '<button class="qrext-set-pick-close"><i class="fa-solid fa-xmark"></i></button>' +
+                        '</div>' +
+                        '<div class="qrext-set-pick-search-wrap">' +
+                            '<i class="fa-solid fa-magnifying-glass"></i>' +
+                            '<input class="qrext-set-pick-search" type="text" placeholder="세트 검색..." autocomplete="off" />' +
+                        '</div>' +
+                        '<div class="qrext-set-pick-list"></div>' +
+                    '</div>';
+
+                modal.querySelector('.qrext-set-pick-close').addEventListener('click', e => {
+                    e.stopPropagation();
+                    modal.remove();
+                });
+                modal.querySelector('.qrext-set-pick-search').addEventListener('input', function() {
+                    renderModal(this.value, false);
+                });
+                modal.addEventListener('click', e => {
+                    if (e.target === modal) modal.remove();
+                });
+
+                setTimeout(() => modal.querySelector('.qrext-set-pick-search').focus(), 0);
+            }
+
+            const newListEl = modal.querySelector('.qrext-set-pick-list');
+            newListEl.innerHTML = listHtml;
+
+            if (preserveScroll) newListEl.scrollTop = scrollTop;
+
+            newListEl.querySelectorAll('.qrext-set-pick-item').forEach(item => {
+                item.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const setName = item.dataset.set;
+                    if (!qrFolders[fname]) qrFolders[fname] = [];
+                    if (already.has(setName)) {
+                        qrFolders[fname] = qrFolders[fname].filter(s => s !== setName);
+                        already.delete(setName);
+                    } else {
+                        qrFolders[fname].push(setName);
+                        already.add(setName);
+                    }
+                    saveQrFolders();
+                    refreshQrFolderList(popup);
+                    renderModal(modal.querySelector('.qrext-set-pick-search').value, true);
+                });
+            });
+        }
+
+        renderModal('', false);
+        const etnNav = document.getElementById('etn-nav');
+        (etnNav || document.body).appendChild(modal);
+    }
+
+
+    function closeQrextPopup() {
+        const p = document.getElementById('qrext-popup');
+        if (p) p.remove();
+        document.removeEventListener('pointerdown', qrextOutsideHandler, true);
+    }
+    function qrextOutsideHandler(e) {
+        const popup = document.getElementById('qrext-popup');
+        if (!popup) { document.removeEventListener('pointerdown', qrextOutsideHandler, true); return; }
+        if (!popup.contains(e.target)) closeQrextPopup();
+    }
+
+    /* ── 적용 / 해제 ─────────────────────────────────────────── */
+    function applyQrExtension() {
+        installGlobalSearch();
+        if (!document.getElementById('qrext-editor-dropdown')) installEditorDropdown();
+    }
+
+    function removeQrExtension() {
+        document.querySelectorAll('.qrext-global-dropdown').forEach(el => {
+            const parent = el.parentElement;
+            const nativeSel = parent && parent.querySelector('select.qr--set.qrext-hidden-select');
+            if (nativeSel) {
+                nativeSel.classList.remove('qrext-hidden-select');
+                delete nativeSel.dataset.qrextGlobalHooked;
+            }
+            el.remove();
+        });
+
+        const editorDd = document.getElementById('qrext-editor-dropdown');
+        if (editorDd) {
+            const nativeSel = document.querySelector('#qr--editor #qr--set');
+            if (nativeSel) {
+                nativeSel.classList.remove('qrext-hidden-select');
+                delete nativeSel.dataset.qrextHooked;
+            }
+            editorDd.remove();
+        }
+
+        document.querySelectorAll('.qrext-search-wrap').forEach(el => el.remove());
+    }
+
+    /* ── 초기화 ──────────────────────────────────────────────── */
+    function qrExtInit() {
+        const toolbarWatcher = setInterval(() => {
+            if (document.getElementById('etn-toolbar')) {
+                clearInterval(toolbarWatcher);
+                installQrToolbarButton();
+            }
+        }, 300);
+
+        const observer = new MutationObserver(() => {
+            if (!qrEnabled) return;
+            installQrToolbarButton();
+            const qrVisible = document.querySelector('#qr_container .inline-drawer-content.etn-force-show');
+            if (qrVisible || document.querySelector('#qr_container')) {
+                installGlobalSearch();
+                if (!document.getElementById('qrext-editor-dropdown')) installEditorDropdown();
+            }
+        });
+        observer.observe(document.getElementById('extensions_settings') || document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', qrExtInit);
+    else qrExtInit();
 })();
