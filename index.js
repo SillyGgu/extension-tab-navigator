@@ -1523,7 +1523,14 @@
 
                 /* ── 세트 이름 ── */
                 '<div class="qrmaker-section">' +
-                    '<div class="qrmaker-section-title">세트 이름</div>' +
+                    '<div class="qrmaker-section-title" style="display:flex;align-items:center;justify-content:space-between;">' +
+                        '<span>세트 이름</span>' +
+                        '<div style="display:flex;gap:5px;">' +
+                            '<button class="qrmaker-add-item-btn" id="qrm-load-set" title="기존 QR 세트 파일 불러오기"><i class="fa-solid fa-folder-open"></i> 세트 불러오기</button>' +
+                            '<input type="file" id="qrm-load-set-file" accept=".json" style="display:none" />' +
+                            '<button class="qrmaker-add-item-btn" id="qrm-reset" title="전체 초기화"><i class="fa-solid fa-rotate-left"></i> 초기화</button>' +
+                        '</div>' +
+                    '</div>' +
                     '<input class="qrmaker-input text_pole" id="qrm-set-name" placeholder="예: 일반 스토리 컨트롤" value="' + esc(state.setName) + '" />' +
                 '</div>' +
 
@@ -1602,6 +1609,37 @@
 
         popup.querySelector('#qrm-set-name').addEventListener('input', e => { state.setName = e.target.value; });
         popup.querySelector('#qrm-main-title').addEventListener('input', e => { state.mainTitle = e.target.value; });
+
+        popup.querySelector('#qrm-load-set').addEventListener('click', () => {
+            popup.querySelector('#qrm-load-set-file').click();
+        });
+
+        popup.querySelector('#qrm-load-set-file').addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    loadSetIntoState(data, popup);
+                } catch {
+                    alert('JSON 파싱 실패: ' + file.name);
+                }
+                this.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        popup.querySelector('#qrm-reset').addEventListener('click', () => {
+            if (!confirm('현재 작업 내용을 모두 초기화할까요?')) return;
+            state.setName    = '';
+            state.mainTitle  = '';
+            state.useInput   = false;
+            state.inputPrompt = '사용자 입력, 필요 없으면 취소';
+            state.varName    = 'order';
+            state.items      = [];
+            render(popup);
+        });
 
         const useInputCb = popup.querySelector('#qrm-use-input');
         useInputCb.addEventListener('change', () => {
@@ -1692,6 +1730,69 @@
                 refreshItemList(popup);
             });
         });
+    }
+
+    /* ── QR 세트 파일 → state 복원 ──────────────────────────── */
+    function loadSetIntoState(data, popup) {
+        if (!data.qrList || !Array.isArray(data.qrList)) {
+            alert('QR 세트 파일 형식이 아닙니다.');
+            return;
+        }
+
+        state.setName   = data.name || '';
+        state.items     = [];
+
+        // 메인 QR: /buttons labels=[...] 가 있는 첫 번째 항목
+        const mainEntry = data.qrList.find(q => /\/buttons\s+labels=/.test(q.message));
+        if (mainEntry) {
+            state.mainTitle = mainEntry.label || '';
+
+            const msg = mainEntry.message;
+
+            // /input 여부 감지
+            if (/\/input\s/.test(msg)) {
+                state.useInput = true;
+                const inputMatch = msg.match(/\/input\s+([^\|]+)\|/);
+                if (inputMatch) state.inputPrompt = inputMatch[1].trim();
+                // setvar 변수명 감지
+                const varMatch = msg.match(/\/setvar\s+key=(\S+)\s+\{\{pipe\}\}/);
+                if (varMatch) state.varName = varMatch[1];
+            } else {
+                state.useInput = false;
+            }
+        }
+
+        // 하위 QR: 메인 제외 나머지
+        const subEntries = mainEntry
+            ? data.qrList.filter(q => q.id !== mainEntry.id)
+            : data.qrList;
+
+        subEntries.forEach(entry => {
+            if (!entry.label) return;
+            const msg = entry.message || '';
+            let sendType = 'send';
+            let sendContent = '';
+
+            const lines = msg.split('\n');
+            const sendLineIdx = lines.findIndex(l => /^\/(send|gen)\s/.test(l.trim()));
+            if (sendLineIdx !== -1) {
+                const match = lines[sendLineIdx].trim().match(/^\/(send|gen)\s+([\s\S]*)/);
+                if (match) {
+                    sendType = match[1];
+                    const afterLines = [match[2], ...lines.slice(sendLineIdx + 1)];
+                    const contentLines = afterLines.filter(l => !/^\|\|?\s*\//.test(l.trim()));
+                    sendContent = contentLines.join('\n').trim();
+                }
+            } else {
+                sendContent = msg.trim();
+            }
+
+            state.items.push({ label: entry.label, sendContent, sendType });
+        });
+
+        // UI 전체 재렌더
+        render(popup);
+        alert('"' + state.setName + '" 세트를 불러왔습니다. 메인 QR 설정과 버튼 항목을 확인 후 수정하세요.');
     }
 
     /* ── QR 파일 임포트 ──────────────────────────────────────── */
