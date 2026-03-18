@@ -1283,3 +1283,298 @@
     opacity: 0.2;
     pointer-events: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   QR 라벨 한글화 (qrext-label-map)
+   ═══════════════════════════════════════════════════════════════════════ */
+.qrext-label-map-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--etn-border);
+}
+.qrext-label-map-row:last-child { border-bottom: none; }
+.qrext-label-orig {
+    flex: 1;
+    font-size: 0.78rem;
+    color: var(--etn-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+.qrext-label-arrow {
+    font-size: 0.75rem;
+    color: var(--etn-text-dim);
+    flex-shrink: 0;
+}
+.qrext-label-translated {
+    flex: 1.2;
+    font-size: 0.8rem;
+    min-width: 0;
+    padding: 2px 6px;
+    height: 24px;
+    box-sizing: border-box;
+}
+.qrext-label-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: color 0.13s;
+}
+.qrext-label-del:hover { color: #f87171; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   QR 제작 도우미 팝업 (qrmaker)
+   ═══════════════════════════════════════════════════════════════════════ */
+#qrmaker-popup {
+    position: absolute;
+    top: 42px;
+    right: 32px;
+    width: 420px;
+    max-width: 96vw;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 10px;
+    box-shadow: var(--etn-shadow);
+    z-index: 9998;
+    overflow: hidden;
+    font-size: 0.85rem;
+    color: var(--etn-text);
+}
+.qrmaker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--etn-border);
+    flex-shrink: 0;
+}
+.qrmaker-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--etn-text);
+}
+.qrmaker-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.9rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+.qrmaker-close-btn:hover { color: var(--etn-text); background: var(--etn-hover-bg); }
+
+.qrmaker-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px 14px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-border) transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.qrmaker-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.qrmaker-section-title {
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--etn-text-dim);
+    margin-bottom: 2px;
+}
+.qrmaker-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.82rem;
+    padding: 4px 8px;
+    height: 28px;
+}
+.qrmaker-check-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.82rem;
+    color: var(--etn-text);
+    cursor: pointer;
+    user-select: none;
+}
+.qrmaker-add-item-btn {
+    background: none;
+    border: 1px solid var(--etn-border);
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+}
+.qrmaker-add-item-btn:hover {
+    color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+    border-color: var(--etn-accent);
+}
+.qrmaker-empty-hint {
+    color: var(--etn-text-dim);
+    font-size: 0.78rem;
+    text-align: center;
+    padding: 10px 0;
+}
+.qrmaker-item-row {
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 7px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.qrmaker-item-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.qrmaker-item-num {
+    font-size: 0.7rem;
+    color: var(--etn-text-dim);
+    flex-shrink: 0;
+    min-width: 14px;
+    text-align: center;
+}
+.qrmaker-item-label {
+    flex: 1;
+    min-width: 0;
+    height: 26px;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.qrmaker-item-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.72rem;
+    padding: 2px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: color 0.13s;
+}
+.qrmaker-item-del:hover { color: #f87171; }
+.qrmaker-item-send {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.78rem;
+    padding: 5px 7px;
+    resize: vertical;
+    background: var(--etn-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 5px;
+    color: var(--etn-text);
+}
+.qrmaker-item-send:focus { border-color: var(--etn-accent); outline: none; }
+.qrmaker-preview-ta {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.72rem;
+    resize: vertical;
+    background: var(--etn-bg2);
+    border: 1px solid var(--etn-border);
+    border-radius: 5px;
+    color: var(--etn-text);
+    padding: 6px 8px;
+    font-family: monospace;
+}
+.qrmaker-sub-label {
+    font-size: 0.72rem;
+    color: var(--etn-accent);
+    margin-top: 6px;
+    margin-bottom: 2px;
+    font-weight: 600;
+}
+.qrmaker-footer {
+    padding-top: 4px;
+    display: flex;
+    justify-content: flex-end;
+}
+.qrmaker-dl-btn {
+    background: var(--etn-accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.15s;
+}
+.qrmaker-dl-btn:hover { opacity: 0.85; }
+
+/* ── QR 제작 도우미: 변수 힌트 & send 타입 선택 ─────────────── */
+.qrmaker-var-hint {
+    font-size: 0.75rem;
+    color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+    border: 1px solid var(--etn-accent);
+    border-radius: 5px;
+    padding: 5px 9px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.5;
+}
+.qrmaker-var-hint code {
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 0.78rem;
+    font-family: monospace;
+    color: var(--etn-text);
+}
+.qrmaker-send-type {
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 5px;
+    color: var(--etn-text);
+    font-size: 0.75rem;
+    padding: 2px 4px;
+    height: 26px;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}

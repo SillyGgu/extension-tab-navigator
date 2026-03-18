@@ -1441,3 +1441,371 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', qrExtInit);
     else qrExtInit();
 })();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QR 제작 도우미  (qr-maker.js)
+   - QR 세트 파일(.json) 생성 도우미
+   - /input, setvar, buttons labels, /send 구조를 GUI로 조립
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    const STORAGE_KEY = 'qrmaker_drafts';
+
+    /* ── 저장 / 불러오기 ─────────────────────────────────────── */
+    function loadDrafts() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+        catch { return []; }
+    }
+    function saveDrafts(arr) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch {}
+    }
+
+    function esc(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── 상태 ────────────────────────────────────────────────── */
+    let state = {
+        setName: '',
+        useInput: false,
+        inputPrompt: '사용자 입력, 필요 없으면 취소',
+        varName: 'order',
+        mainTitle: '',
+        items: []      
+    };
+
+    /* ── 팝업 열기/닫기 ──────────────────────────────────────── */
+    function getNav() { return document.getElementById('etn-nav'); }
+
+    function toggle() {
+        const existing = document.getElementById('qrmaker-popup');
+        if (existing) { close(); return; }
+        open();
+    }
+
+    function close() {
+        const p = document.getElementById('qrmaker-popup');
+        if (p) p.remove();
+        document.removeEventListener('pointerdown', outsideHandler, true);
+        const btn = document.getElementById('qrmaker-open-btn');
+        if (btn) btn.classList.remove('qrext-active');
+    }
+
+    function outsideHandler(e) {
+        const p = document.getElementById('qrmaker-popup');
+        if (!p) { document.removeEventListener('pointerdown', outsideHandler, true); return; }
+        if (!p.contains(e.target) && e.target.id !== 'qrmaker-open-btn') close();
+    }
+
+    function open() {
+        const nav = getNav();
+        if (!nav) return;
+        const popup = document.createElement('div');
+        popup.id = 'qrmaker-popup';
+        popup.addEventListener('click', e => e.stopPropagation());
+        popup.addEventListener('pointerdown', e => e.stopPropagation());
+        nav.appendChild(popup);
+        render(popup);
+        setTimeout(() => document.addEventListener('pointerdown', outsideHandler, true), 0);
+        const btn = document.getElementById('qrmaker-open-btn');
+        if (btn) btn.classList.add('qrext-active');
+    }
+
+    /* ── 메인 렌더 ───────────────────────────────────────────── */
+    function render(popup) {
+        popup.innerHTML =
+            '<div class="qrmaker-header">' +
+                '<span class="qrmaker-title"><i class="fa-solid fa-wand-magic-sparkles"></i> QR 제작 도우미</span>' +
+                '<button class="qrmaker-close-btn" id="qrmaker-close"><i class="fa-solid fa-xmark"></i></button>' +
+            '</div>' +
+            '<div class="qrmaker-body">' +
+
+                /* ── 세트 이름 ── */
+                '<div class="qrmaker-section">' +
+                    '<div class="qrmaker-section-title">세트 이름</div>' +
+                    '<input class="qrmaker-input text_pole" id="qrm-set-name" placeholder="예: 일반 스토리 컨트롤" value="' + esc(state.setName) + '" />' +
+                '</div>' +
+
+                /* ── 메인 QR 설정 ── */
+                '<div class="qrmaker-section">' +
+                    '<div class="qrmaker-section-title">메인 QR 설정</div>' +
+                    '<input class="qrmaker-input text_pole" id="qrm-main-title" placeholder="메인 버튼 표시 제목 (예: 일반 스토리 컨트롤)" value="' + esc(state.mainTitle) + '" />' +
+                    '<label class="qrmaker-check-row">' +
+                        '<input type="checkbox" id="qrm-use-input" ' + (state.useInput ? 'checked' : '') + ' />' +
+                        '<span>/input 추가 (사용자 자유 입력)</span>' +
+                    '</label>' +
+                    '<div id="qrm-input-options" style="' + (state.useInput ? '' : 'display:none') + '">' +
+                        '<input class="qrmaker-input text_pole" id="qrm-input-prompt" placeholder="입력 안내 문구" value="' + esc(state.inputPrompt) + '" />' +
+                        '<input class="qrmaker-input text_pole" id="qrm-var-name" placeholder="setvar 변수명 (예: order)" value="' + esc(state.varName) + '" />' +
+                    '</div>' +
+                '</div>' +
+
+                /* ── 버튼 목록 ── */
+                '<div class="qrmaker-section">' +
+                    '<div class="qrmaker-section-title" style="display:flex;align-items:center;justify-content:space-between;">' +
+                        '<span>버튼 항목</span>' +
+                        '<button class="qrmaker-add-item-btn" id="qrm-add-item"><i class="fa-solid fa-plus"></i> 추가</button>' +
+                    '</div>' +
+                    '<div id="qrm-item-list">' + renderItemList() + '</div>' +
+                '</div>' +
+
+                /* ── 미리보기 ── */
+                '<div class="qrmaker-section">' +
+                    '<div class="qrmaker-section-title" style="display:flex;align-items:center;justify-content:space-between;">' +
+                        '<span>미리보기</span>' +
+                        '<button class="qrmaker-add-item-btn" id="qrm-preview-btn"><i class="fa-solid fa-eye"></i> 생성</button>' +
+                    '</div>' +
+                    '<div id="qrm-preview-area"></div>' +
+                '</div>' +
+
+                /* ── 다운로드 ── */
+                '<div class="qrmaker-footer">' +
+                    '<button class="qrmaker-dl-btn" id="qrm-download"><i class="fa-solid fa-file-export"></i> QR 세트 파일 다운로드</button>' +
+                '</div>' +
+
+            '</div>';
+
+        bindEvents(popup);
+    }
+
+    /* ── 버튼 항목 렌더 ──────────────────────────────────────── */
+    function renderItemList() {
+        if (!state.items.length) {
+            return '<div class="qrmaker-empty-hint">버튼 항목이 없습니다. 추가 버튼을 눌러 시작하세요.</div>';
+        }
+        const inputHint = state.useInput
+            ? '<div class="qrmaker-var-hint"><i class="fa-solid fa-circle-info"></i> 사용자 입력값 변수: <code>{{getvar::' + esc(state.varName || 'order') + '}}</code> — 내용에 직접 삽입해 사용하세요</div>'
+            : '';
+        return inputHint + state.items.map((item, idx) =>
+            '<div class="qrmaker-item-row" data-idx="' + idx + '">' +
+                '<div class="qrmaker-item-header">' +
+                    '<span class="qrmaker-item-num">' + (idx + 1) + '</span>' +
+                    '<input class="qrmaker-input qrmaker-item-label text_pole" data-idx="' + idx + '" placeholder="버튼 라벨 (예: 보통 이어쓰기)" value="' + esc(item.label) + '" />' +
+                    '<select class="qrmaker-send-type" data-idx="' + idx + '">' +
+                        '<option value="send"' + (item.sendType !== 'gen' ? ' selected' : '') + '>/send</option>' +
+                        '<option value="gen"' + (item.sendType === 'gen' ? ' selected' : '') + '>/gen</option>' +
+                    '</select>' +
+                    '<button class="qrmaker-item-del" data-idx="' + idx + '" title="삭제"><i class="fa-solid fa-trash-can"></i></button>' +
+                '</div>' +
+                '<textarea class="qrmaker-item-send text_pole" data-idx="' + idx + '" rows="3" placeholder="전송할 내용을 입력하세요' + (state.useInput ? ' ({{getvar::' + (state.varName || 'order') + '}} 로 입력값 사용 가능)' : '') + '">' + esc(item.sendContent) + '</textarea>' +
+            '</div>'
+        ).join('');
+    }
+    /* ── 이벤트 바인딩 ───────────────────────────────────────── */
+    function bindEvents(popup) {
+        popup.querySelector('#qrmaker-close').addEventListener('click', close);
+
+        popup.querySelector('#qrm-set-name').addEventListener('input', e => { state.setName = e.target.value; });
+        popup.querySelector('#qrm-main-title').addEventListener('input', e => { state.mainTitle = e.target.value; });
+
+        const useInputCb = popup.querySelector('#qrm-use-input');
+        useInputCb.addEventListener('change', () => {
+            state.useInput = useInputCb.checked;
+            popup.querySelector('#qrm-input-options').style.display = state.useInput ? '' : 'none';
+            refreshItemList(popup);
+        });
+        popup.querySelector('#qrm-input-prompt').addEventListener('input', e => { state.inputPrompt = e.target.value; });
+        popup.querySelector('#qrm-var-name').addEventListener('input', e => { state.varName = e.target.value; });
+
+        popup.querySelector('#qrm-add-item').addEventListener('click', () => {
+            state.items.push({ label: '', sendContent: '' });
+            refreshItemList(popup);
+        });
+
+        popup.querySelector('#qrm-preview-btn').addEventListener('click', () => {
+            const preview = buildQrScript();
+            const area = popup.querySelector('#qrm-preview-area');
+            area.innerHTML =
+                '<textarea class="qrmaker-preview-ta text_pole" readonly rows="10">' + esc(preview.mainQr) + '</textarea>' +
+                (preview.subQrs.length
+                    ? '<div class="qrmaker-section-title" style="margin-top:8px">하위 QR들</div>' +
+                      preview.subQrs.map((s, i) =>
+                          '<div class="qrmaker-sub-label">' + esc(state.items[i] ? state.items[i].label : '') + '</div>' +
+                          '<textarea class="qrmaker-preview-ta text_pole" readonly rows="4">' + esc(s) + '</textarea>'
+                      ).join('')
+                    : ''
+                );
+        });
+
+        popup.querySelector('#qrm-download').addEventListener('click', () => {
+            const json = buildQrJson();
+            downloadJson(json, (state.setName || 'qr_set') + '.json');
+        });
+
+        refreshItemList(popup);
+    }
+
+    function refreshItemList(popup) {
+        const listEl = popup.querySelector('#qrm-item-list');
+        listEl.innerHTML = renderItemList();
+
+        listEl.querySelectorAll('.qrmaker-item-label').forEach(input => {
+            input.addEventListener('input', e => {
+                state.items[+e.target.dataset.idx].label = e.target.value;
+            });
+        });
+        listEl.querySelectorAll('.qrmaker-item-send').forEach(ta => {
+            ta.addEventListener('input', e => {
+                state.items[+e.target.dataset.idx].sendContent = e.target.value;
+            });
+        });
+        listEl.querySelectorAll('.qrmaker-send-type').forEach(sel => {
+            sel.addEventListener('change', e => {
+                state.items[+e.target.dataset.idx].sendType = e.target.value;
+            });
+        });
+        listEl.querySelectorAll('.qrmaker-item-del').forEach(btn => {
+            btn.addEventListener('click', e => {
+                state.items.splice(+btn.dataset.idx, 1);
+                refreshItemList(popup);
+            });
+        });
+    }
+
+    /* ── QR 스크립트 생성 ────────────────────────────────────── */
+    function buildQrScript() {
+        const inputVarName  = state.varName || 'order';
+        const buttonVarName = 'option';
+        const mainTitle     = state.mainTitle || state.setName || '메뉴';
+        const labels        = state.items.map(i => i.label).filter(Boolean);
+
+        /* 메인 QR */
+        let mainLines = [];
+        if (state.useInput) {
+            mainLines.push('/input ' + (state.inputPrompt || '사용자 입력, 필요 없으면 취소') + ' |');
+            mainLines.push('/setvar key=' + inputVarName + ' {{pipe}} ||');
+        }
+        if (labels.length) {
+            mainLines.push('/buttons labels=["' + labels.join('","') + '"] ' + mainTitle + ' |');
+            mainLines.push('/setvar key=' + buttonVarName + ' ||');
+            mainLines.push('/if left={{getvar::' + buttonVarName + '}} rule=eq right="" {: /flushvar ' + buttonVarName + (state.useInput ? ' | /flushvar ' + inputVarName : '') + ' | /abort :} ||');
+            labels.forEach((label, idx) => {
+                const safeLabel = label.replace(/"/g, '\\"');
+                const isLast    = idx === labels.length - 1;
+                mainLines.push('/if left={{getvar::' + buttonVarName + '}} rule=eq right="' + safeLabel + '" {: /flushvar ' + buttonVarName + ' | /run ' + (state.setName || 'SET') + '.' + safeLabel + ' :}' + (isLast ? '' : ' ||'));
+            });
+        }
+        const mainQr = mainLines.join('\n');
+
+        /* 하위 QR들 */
+        const subQrs = state.items.map(item => {
+            if (!item.label) return '';
+            const cmd = item.sendType === 'gen' ? '/gen ' : '/send ';
+            const content = item.sendContent.trim();
+            const flushLine = state.useInput ? '| /flushvar ' + inputVarName : '';
+            if (!content && !flushLine) return '';
+            const lines = [];
+            if (content) lines.push(cmd + content);
+            if (state.useInput) lines.push('| /flushvar ' + inputVarName);
+            lines.push('|| /trigger');
+            return lines.join('\n');
+        });
+
+        return { mainQr, subQrs };
+    }
+    /* ── QR JSON 생성 ─────────────── */
+    function buildQrJson() {
+        const { mainQr, subQrs } = buildQrScript();
+        const setName = state.setName || 'QR세트';
+        const qrList = [];
+        let idCounter = 1;
+
+        /* 메인 QR */
+        qrList.push({
+            id: idCounter++,
+            showLabel: true,
+            label: state.mainTitle || setName,
+            title: state.mainTitle || setName,
+            message: mainQr,
+            contextList: [],
+            preventAutoExecute: true,
+            isHidden: false,
+            executeOnStartup: false,
+            executeOnUser: false,
+            executeOnAi: false,
+            executeOnChatChange: false,
+            executeOnGroupMemberDraft: false,
+            executeOnNewChat: false,
+            executeBeforeGeneration: false,
+            automationId: ''
+        });
+
+        /* 하위 QR들 */
+        state.items.forEach((item, i) => {
+            if (!item.label) return;
+            qrList.push({
+                id: idCounter++,
+                showLabel: true,
+                label: item.label,
+                title: item.label,
+                message: subQrs[i] || '',
+                contextList: [],
+                preventAutoExecute: true,
+                isHidden: false,
+                executeOnStartup: false,
+                executeOnUser: false,
+                executeOnAi: false,
+                executeOnChatChange: false,
+                executeOnGroupMemberDraft: false,
+                executeOnNewChat: false,
+                executeBeforeGeneration: false,
+                automationId: ''
+            });
+        });
+
+        return {
+            version: 2,
+            name: setName,
+            disableSend: false,
+            placeBeforeInput: false,
+            injectInput: false,
+            color: 'rgba(0, 0, 0, 0)',
+            onlyBorderColor: false,
+            qrList: qrList,
+            idIndex: idCounter
+        };
+    }
+
+    /* ── 파일 다운로드 ───────────────────────────────────────── */
+    function downloadJson(obj, filename) {
+        const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    }
+
+    /* ── 공개 API ────────────────────────────────────────────── */
+    window.QRMaker = { toggle, open, close };
+
+    /* ── 초기화 ────────── */
+    function installMakerBtn() {
+        const toolbar = document.getElementById('etn-toolbar');
+        if (!toolbar || toolbar.querySelector('#qrmaker-open-btn')) return;
+        const settingsBtn = toolbar.querySelector('#etn-settings-btn');
+        const btn = document.createElement('button');
+        btn.id = 'qrmaker-open-btn';
+        btn.className = 'etn-toolbar-btn';
+        btn.title = 'QR 제작 도우미';
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>';
+        btn.addEventListener('pointerdown', e => e.stopPropagation());
+        btn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+        if (settingsBtn) settingsBtn.insertAdjacentElement('beforebegin', btn);
+        else toolbar.appendChild(btn);
+    }
+
+    const initTimer = setInterval(() => {
+        if (document.getElementById('etn-toolbar')) {
+            installMakerBtn();
+            clearInterval(initTimer);
+        }
+    }, 300);
+
+    const toolbarObserver = new MutationObserver(() => installMakerBtn());
+    toolbarObserver.observe(document.body, { subtree: true, childList: true });
+
+})();
