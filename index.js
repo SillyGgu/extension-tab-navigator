@@ -1545,7 +1545,11 @@
                 '<div class="qrmaker-section">' +
                     '<div class="qrmaker-section-title" style="display:flex;align-items:center;justify-content:space-between;">' +
                         '<span>버튼 항목</span>' +
-                        '<button class="qrmaker-add-item-btn" id="qrm-add-item"><i class="fa-solid fa-plus"></i> 추가</button>' +
+                        '<div style="display:flex;gap:5px;">' +
+                            '<button class="qrmaker-add-item-btn" id="qrm-import-qr" title="QR 파일에서 항목 가져오기"><i class="fa-solid fa-file-import"></i> 파일 임포트</button>' +
+                            '<input type="file" id="qrm-import-file" accept=".json" style="display:none" />' +
+                            '<button class="qrmaker-add-item-btn" id="qrm-add-item"><i class="fa-solid fa-plus"></i> 추가</button>' +
+                        '</div>' +
                     '</div>' +
                     '<div id="qrm-item-list">' + renderItemList() + '</div>' +
                 '</div>' +
@@ -1609,8 +1613,35 @@
         popup.querySelector('#qrm-var-name').addEventListener('input', e => { state.varName = e.target.value; });
 
         popup.querySelector('#qrm-add-item').addEventListener('click', () => {
-            state.items.push({ label: '', sendContent: '' });
+            state.items.push({ label: '', sendContent: '', sendType: 'send' });
             refreshItemList(popup);
+        });
+
+        popup.querySelector('#qrm-import-qr').addEventListener('click', () => {
+            popup.querySelector('#qrm-import-file').click();
+        });
+
+        popup.querySelector('#qrm-import-file').addEventListener('change', function() {
+            const files = Array.from(this.files);
+            if (!files.length) return;
+            let remaining = files.length;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        importQrItem(data);
+                    } catch {
+                        alert(file.name + ' — JSON 파싱 실패');
+                    }
+                    remaining--;
+                    if (remaining === 0) {
+                        refreshItemList(popup);
+                        this.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            });
         });
 
         popup.querySelector('#qrm-preview-btn').addEventListener('click', () => {
@@ -1660,6 +1691,44 @@
                 state.items.splice(+btn.dataset.idx, 1);
                 refreshItemList(popup);
             });
+        });
+    }
+
+    /* ── QR 파일 임포트 ──────────────────────────────────────── */
+    function importQrItem(data) {
+        // 단일 QR 항목 { label, message, ... } 또는
+        // QR 세트 { qrList: [...] } 둘 다 처리
+        const entries = data.qrList
+            ? data.qrList
+            : (data.label !== undefined ? [data] : []);
+
+        entries.forEach(entry => {
+            if (!entry.label) return;
+            const msg = entry.message || '';
+
+            // /send 또는 /gen 으로 시작하는 줄 찾기
+            // 해당 명령어 제거 후 나머지를 sendContent로
+            let sendType = 'send';
+            let sendContent = '';
+
+            const lines = msg.split('\n');
+            const sendLineIdx = lines.findIndex(l => /^\/(send|gen)\s/.test(l.trim()));
+            if (sendLineIdx !== -1) {
+                const match = lines[sendLineIdx].trim().match(/^\/(send|gen)\s+([\s\S]*)/);
+                if (match) {
+                    sendType = match[1];
+                    // /send 줄 이후 내용도 포함 (멀티라인 내용 대응)
+                    const afterLines = [match[2], ...lines.slice(sendLineIdx + 1)];
+                    // | /flushvar ... 나 || /trigger 같은 파이프 후처리 줄은 제외
+                    const contentLines = afterLines.filter(l => !/^\|\|?\s*\//.test(l.trim()));
+                    sendContent = contentLines.join('\n').trim();
+                }
+            } else {
+                // /send, /gen 없으면 전체를 그대로
+                sendContent = msg.trim();
+            }
+
+            state.items.push({ label: entry.label, sendContent, sendType });
         });
     }
 
