@@ -49,51 +49,79 @@
 #etn-toolbar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 5px 10px;
+    gap: 0;
+    padding: 0 8px;
     background: var(--etn-bg);
     border: 1px solid var(--etn-border);
     border-bottom: none;
-    border-radius: 8px 8px 0 0;
+    border-radius: 10px 10px 0 0;
     box-shadow: var(--etn-shadow);
+    height: 44px;
+    box-sizing: border-box;
 }
 
-.etn-toolbar-label,
-.etn-toolbar-value {
-    font-size: 0.68rem;
+/* ── 너비 슬라이더 영역 ───────────────────────────────────────────────── */
+.etn-width-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px;
+    height: 28px;
+    background: var(--etn-icon-bg);
+    border: 1px solid var(--etn-border);
+    border-radius: 14px;
+    flex-shrink: 0;
+    transition: border-color 0.15s;
+}
+.etn-width-group:hover { border-color: var(--etn-hover-border); }
+
+.etn-toolbar-label {
+    font-size: 0.65rem;
     color: var(--etn-text-dim);
     white-space: nowrap;
-    flex-shrink: 0;
     user-select: none;
+    letter-spacing: 0.02em;
 }
-.etn-toolbar-value { min-width: 34px; }
+.etn-toolbar-value {
+    font-size: 0.67rem;
+    color: var(--etn-text);
+    white-space: nowrap;
+    user-select: none;
+    min-width: 26px;
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
 
 #etn-width-slider {
-    flex: 1;
-    min-width: 60px;
-    max-width: 160px;
-    height: 3px;
+    width: 72px;
+    height: 2px;
     cursor: pointer;
     accent-color: var(--etn-accent);
+    flex-shrink: 0;
 }
 
-.etn-toolbar-sep {
-    flex: 1;
+.etn-toolbar-sep { flex: 1; }
+
+/* ── 툴바 우측 버튼 영역 ──────────────────────────────────────────────── */
+.etn-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-/* ── 테마 토글 버튼 ────────────────────────────────────────────────────── */
 .etn-toolbar-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    border: 1px solid var(--etn-border);
-    background: var(--etn-icon-bg);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
     color: var(--etn-text-dim);
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
     flex-shrink: 0;
     padding: 0;
@@ -101,61 +129,86 @@
 .etn-toolbar-btn:hover {
     background: var(--etn-hover-bg);
     color: var(--etn-text);
-    border-color: var(--etn-hover-border);
+    border-color: var(--etn-border);
+}
+.etn-toolbar-btn.etn-btn-active,
+.etn-toolbar-btn.qrext-active {
+    background: var(--etn-accent-bg) !important;
+    color: var(--etn-accent) !important;
+    border-color: var(--etn-accent) !important;
 }
 
-/* ═══ SCROLL BAR ═════════════════════════════════════════════ */
+/* 버튼 구분선 */
+.etn-toolbar-divider {
+    width: 1px;
+    height: 18px;
+    background: var(--etn-border);
+    flex-shrink: 0;
+    margin: 0 2px;
+}
+
+/* ═══ APP LAUNCHER BAR ═════════════════════════════════════════════════════
+   extension 선택 영역 - 앱 런처 wrap 방식 (F 스타일)
+   ═══════════════════════════════════════════════════════════════════════ */
 #etn-scroll-bar {
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--etn-border) transparent;
-    padding: 6px 4px 8px;
-    cursor: default;
+    overflow: hidden;
+    cursor: grab;
     user-select: none;
     -webkit-user-select: none;
     background: var(--etn-bg);
     border: 1px solid var(--etn-border);
     border-top: none;
-    border-radius: 0 0 8px 8px;
+    border-radius: 0 0 10px 10px;
     margin-bottom: 10px;
 }
-
-#etn-scroll-bar.dragging { cursor: grabbing; }
-
-#etn-scroll-bar::-webkit-scrollbar        { height: 3px; }
-#etn-scroll-bar::-webkit-scrollbar-track  { background: transparent; }
-#etn-scroll-bar::-webkit-scrollbar-thumb  {
-    background: var(--etn-border);
-    border-radius: 2px;
+#etn-scroll-bar.dragging {
+    cursor: grabbing;
 }
 
-/* ── Icon track ─────────────────────────────────────────────────────────── */
+/* ── Icon track (wrap grid) ─────────────────────────────────────────────── */
 #etn-icon-track {
     display: flex;
     flex-direction: row;
-    gap: 5px;
-    align-items: flex-start;
-    width: max-content;
-    padding: 2px 4px;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 6px 10px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+#etn-icon-track::-webkit-scrollbar { display: none; }
+
+/* ── 고정/미고정 구분선 ──────────────────────────────────────────────────── */
+#etn-track-divider {
+    width: 0;
+    height: auto;
+    align-self: stretch;
+    border: none;
+    border-left: 1px dashed var(--etn-border);
+    flex-shrink: 0;
+    margin: 4px 4px;
 }
 
-/* ═══ ICON BUTTON ══════════════════════════════════════════════════════════ */
+/* ═══ APP ICON BUTTON ═══════════════════════════════════════════════════════ */
 .etn-icon-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
-    padding: 7px 9px 6px;
-    border-radius: 8px;
+    gap: 6px;
+    padding: 10px 8px 8px;
+    border-radius: 12px;
     cursor: pointer;
-    min-width: 58px;
-    max-width: 78px;
     border: 1px solid transparent;
     position: relative;
     flex-shrink: 0;
-    transition: background 0.15s, border-color 0.15s;
-    color: var(--etn-text);
+    width: 68px;
+    box-sizing: border-box;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    color: var(--etn-text-dim);
     background: transparent;
 }
 
@@ -164,31 +217,33 @@
         background: var(--etn-hover-bg);
         border-color: var(--etn-hover-border);
         color: var(--etn-text);
+        transform: translateY(-1px);
     }
 }
+.etn-icon-btn:active { transform: scale(0.94); }
 
 .etn-icon-btn.etn-active {
     background: var(--etn-accent-bg);
     border-color: var(--etn-accent);
-    color: var(--etn-active-text);
+    color: var(--etn-accent);
 }
 
-/* ── Icon inner ─────────────────────────────────────────── */
+/* ── 아이콘 박스 ────────────────────────────────────────────────────────── */
 .etn-icon-inner {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 7px;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
     background: var(--etn-icon-bg);
     border: 1px solid var(--etn-border);
     font-size: 1.1rem;
-    color: inherit;        
-    transition: background 0.15s, border-color 0.15s;
+    color: inherit;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
-
 @media (hover: hover) and (pointer: fine) {
     .etn-icon-btn:hover .etn-icon-inner {
         background: var(--etn-hover-bg);
@@ -199,68 +254,53 @@
     background: var(--etn-accent-bg);
     border-color: var(--etn-accent);
     color: var(--etn-accent);
+    box-shadow: 0 0 0 3px var(--etn-accent-bg);
 }
 
-/* ── Pin dot ────────────────────────────────────────────────────────────── */
+/* ── 핀 인디케이터 (아이콘 우상단 점) ───────────────────────────────────── */
 .etn-pin-dot {
     position: absolute;
-    top: -5px;
-    right: -5px;
-    width: 17px;
-    height: 17px;
+    top: 7px;
+    right: 7px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: var(--etn-pin-bg);
-    border: 1px solid var(--etn-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.15s, background 0.15s;
-    cursor: pointer;
-    z-index: 2;
-    color: var(--etn-text-dim);
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .etn-icon-btn:hover .etn-pin-dot {
-        opacity: 1;
-    }
-}
-
-.etn-icon-btn.etn-pinned .etn-pin-dot {
-    opacity: 1;
-}
-
-
-.etn-pin-dot:hover {
     background: var(--etn-accent);
-    color: #fff !important;
-    border-color: transparent;
+    border: 1.5px solid var(--etn-bg);
+    display: none;
+    z-index: 2;
 }
+.etn-icon-btn.etn-pinned .etn-pin-dot { display: block; }
 
-.etn-icon-btn.etn-pinned .etn-pin-dot {
-    color: var(--etn-accent);
-}
-
-/* ── Label ──────────────────────────────────────────────────────────────── */
+/* ── 라벨 ───────────────────────────────────────────────────────────────── */
 .etn-icon-label {
-    font-size: 0.63rem;
+    font-size: 0.62rem;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 74px;
+    width: 100%;
     line-height: 1.2;
     color: inherit;
-    opacity: 0.75;
-    transition: opacity 0.15s;
+    transition: color 0.13s;
+    font-weight: 500;
+}
+.etn-icon-btn.etn-active .etn-icon-label {
+    font-weight: 600;
+    color: var(--etn-accent);
 }
 
-@media (hover: hover) and (pointer: fine) {
-    .etn-icon-btn:hover .etn-icon-label { opacity: 0.95; }
+/* ── 모바일 ─────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    #etn-icon-track     { gap: 5px; padding: 8px 8px 6px; }
+    .etn-icon-btn       { width: 60px; padding: 8px 6px 6px; border-radius: 10px; }
+    .etn-icon-inner     { width: 36px; height: 36px; font-size: 1rem; border-radius: 9px; }
+    .etn-icon-label     { font-size: 0.58rem; }
+    #etn-toolbar        { height: 40px; padding: 0 6px; }
+    .etn-width-group    { gap: 5px; padding: 0 8px; }
+    #etn-width-slider   { width: 52px; }
+    .etn-toolbar-btn    { width: 30px; height: 30px; font-size: 0.76rem; }
 }
-.etn-icon-btn.etn-active .etn-icon-label { opacity: 1; }
 
 /* ═══ PANEL AREA ═══════════════════════════════════════════════════════════ */
 #etn-panel-area {
@@ -276,12 +316,9 @@
     box-shadow: var(--etn-shadow);
 }
 
-/* ── Divider ───────────────────────── */
-
 #etn-nav::after { content: ''; display: none; }
 
 /* ═══ DRAWER OVERRIDES ═════════════════════════════════════════════════════ */
-
 .inline-drawer-content.etn-force-show { display: block !important; }
 .inline-drawer-content.etn-force-hide { display: none !important; }
 
@@ -302,10 +339,14 @@
 
 /* ═══ MOBILE ════════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-    .etn-icon-btn   { min-width: 50px; max-width: 64px; padding: 5px 7px 5px; }
-    .etn-icon-inner { width: 28px; height: 28px; font-size: 0.95rem; }
-    .etn-icon-label { font-size: 0.58rem; max-width: 60px; }
-    #etn-toolbar    { flex-wrap: wrap; }
+    #etn-toolbar        { height: 40px; padding: 0 6px; }
+    .etn-width-group    { gap: 5px; padding: 0 8px; }
+    #etn-width-slider   { width: 52px; }
+    .etn-toolbar-btn    { width: 30px; height: 30px; font-size: 0.76rem; }
+    #etn-icon-track     { gap: 3px; padding: 5px 8px; }
+    .etn-icon-btn       { width: 60px; padding: 6px 6px 5px; border-radius: 10px; }
+    .etn-icon-inner     { width: 34px; height: 34px; font-size: 0.95rem; border-radius: 9px; }
+    .etn-icon-label     { font-size: 0.56rem; }
 }
 
 
@@ -785,13 +826,14 @@
 /* ═══════════════════════════════════════════════════════════════════════
    QR 확장 팝업
    ═══════════════════════════════════════════════════════════════════════ */
-#qrext-popup {
+#qrext-popup,
+#etn-preset-popup {
     position: absolute;
     top: 42px;
-    right: 56px; /* 설정 버튼 왼쪽 */
-    width: 380px;
+    right: 0;
+    width: clamp(340px, 28vw, 520px);
     max-width: calc(100vw - 16px);
-    max-height: 75vh;
+    max-height: clamp(60vh, 75vh, 85vh);
     display: flex;
     flex-direction: column;
     background: var(--etn-bg);
@@ -804,8 +846,11 @@
     color: var(--etn-text);
 }
 
+#qrext-popup { right: 56px; }
+
 @media (max-width: 600px) {
-    #qrext-popup {
+    #qrext-popup,
+    #etn-preset-popup {
         position: fixed;
         top: auto;
         bottom: 0;
@@ -1099,9 +1144,10 @@
     min-width: 0;
 }
 #qr--editor .qr--head > .qr--actions .qrext-custom-dropdown .qrext-dd-panel {
-    min-width: 200px;
-    width: max-content;
+    min-width: 100%;
+    width: 100%;
     max-width: 90vw;
+    box-sizing: border-box;
 }
 
 /* ── 폴더 세트 추가 버튼 ─────────────────────────────────────────── */
@@ -1128,7 +1174,8 @@
 }
 
 /* ── 세트 선택 모달 ──────────────────────────────────────────────── */
-#qrext-set-pick-modal {
+#qrext-set-pick-modal,
+#prm-pick-modal {
     position: fixed;
     inset: 0;
     z-index: 20000;
@@ -1138,7 +1185,6 @@
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
-    /* CSS 변수 상속을 위해 etn-nav 자식으로 마운트되므로 color 명시 불필요 */
     color: var(--etn-text);
 }
 .qrext-set-pick-inner {
@@ -1243,10 +1289,11 @@
     overflow: visible !important;
 }
 #qr--editor .qr--actions .qrext-custom-dropdown .qrext-dd-panel {
-    min-width: 200px;
-    width: max-content;
+    min-width: 100%;
+    width: 100%;
     max-width: 90vw;
     overflow: visible;
+    box-sizing: border-box;
 }
 #qr--editor .qr--actions .qrext-custom-dropdown .qrext-dd-panel .qrext-dd-list {
     overflow-y: auto;
@@ -1577,4 +1624,249 @@
     cursor: pointer;
     flex-shrink: 0;
     box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   백업 / 복원 UI
+   ═══════════════════════════════════════════════════════════════════════ */
+.qrext-backup-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.qrext-backup-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--etn-border);
+    background: var(--etn-icon-bg);
+    color: var(--etn-text);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s, color 0.13s;
+}
+.qrext-backup-btn:hover {
+    background: var(--etn-hover-bg);
+    border-color: var(--etn-hover-border);
+}
+.qrext-backup-btn.qrext-backup-export:hover {
+    color: var(--etn-accent);
+    border-color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+}
+.qrext-backup-btn.qrext-backup-import:hover {
+    color: #34d399;
+    border-color: rgba(52,211,153,0.5);
+    background: rgba(52,211,153,0.1);
+}
+.qrext-backup-hint {
+    font-size: 0.69rem;
+    color: var(--etn-text-dim);
+    line-height: 1.5;
+    padding: 2px 0;
+}
+
+/* ── 폴더 내 세트 순서 변경 버튼 ──────────────────────────────────── */
+.qrext-fr-set-move-up,
+.qrext-fr-set-move-down {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.62rem;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+}
+.qrext-fr-set-move-up:hover,
+.qrext-fr-set-move-down:hover {
+    color: var(--etn-accent);
+    background: var(--etn-accent-bg);
+    border-color: var(--etn-accent);
+}
+.qrext-fr-set-move-up:disabled,
+.qrext-fr-set-move-down:disabled {
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+/* ═══ PRESET POPUP ══════════════════════════════════════════════════════════ */
+
+#etn-preset-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--etn-border);
+    flex-shrink: 0;
+}
+
+#etn-preset-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--etn-text-dim);
+    font-size: 0.9rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+#etn-preset-close:hover { color: var(--etn-text); background: var(--etn-hover-bg); }
+
+#etn-preset-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 6px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-border) transparent;
+}
+
+#etn-preset-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.etn-preset-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--etn-text);
+    transition: background 0.12s, color 0.12s;
+    font-size: 0.83rem;
+}
+.etn-preset-item:hover {
+    background: var(--etn-hover-bg);
+}
+.etn-preset-item.etn-preset-active {
+    background: var(--etn-accent-bg);
+    color: var(--etn-accent);
+    font-weight: 600;
+}
+.etn-preset-check {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    width: 14px;
+    color: var(--etn-accent);
+}
+.etn-preset-check-placeholder {
+    display: inline-block;
+    width: 14px;
+    flex-shrink: 0;
+}
+.etn-preset-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Preset 드롭다운 패널 (부모 overflow 회피) ──────────────────────────── */
+#prm-custom-dropdown {
+    position: relative;
+}
+#prm-custom-dropdown .qrext-dd-panel {
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: auto;
+    width: 320px;
+    max-width: 94vw;
+    z-index: 19000;
+    background: var(--etn-bg, #1a1a2e);
+    border: 1px solid var(--etn-border, #333);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    border-radius: 8px;
+}
+.prm-folder-icon {
+    color: #f59e0b !important;
+    font-size: 0.82rem;
+}
+
+/* ── 초기화 버튼 ──────────────────────────────────────────────────── */
+.qrext-reset-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.08);
+    color: #f87171;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s;
+}
+.qrext-reset-btn:hover {
+    background: rgba(248, 113, 113, 0.18);
+    border-color: #f87171;
+}
+
+#prm-custom-dropdown .qrext-dd-panel {
+    border-radius: 8px;
+}
+#prm-custom-dropdown .qrext-dd-search-wrap {
+    border-radius: 8px 8px 0 0;
+    padding: 9px 12px 8px;
+    background: var(--etn-bg2);
+}
+#prm-custom-dropdown .qrext-dd-list {
+    padding: 6px 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--etn-accent) transparent;
+}
+#prm-custom-dropdown .qrext-dd-list::-webkit-scrollbar {
+    width: 5px;
+}
+#prm-custom-dropdown .qrext-dd-list::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+#prm-custom-dropdown .qrext-dd-list::-webkit-scrollbar-thumb {
+    background: var(--etn-border);
+    border-radius: 4px;
+}
+#prm-custom-dropdown .qrext-dd-list::-webkit-scrollbar-thumb:hover {
+    background: var(--etn-accent);
+}
+#prm-custom-dropdown .qrext-dd-item {
+    padding: 6px 14px;
+    border-radius: 5px;
+    margin: 1px 4px;
+    font-size: 0.83rem;
+    line-height: 1.4;
+}
+#prm-custom-dropdown .qrext-dd-folder-header {
+    padding: 6px 12px 6px 10px;
+    border-radius: 5px;
+    margin: 2px 4px 1px;
+    font-size: 0.83rem;
+}
+#prm-custom-dropdown .qrext-dd-folder-items .qrext-dd-item {
+    padding-left: 30px;
+}
+#prm-custom-dropdown .qrext-dd-group-label {
+    padding: 8px 14px 4px;
+    font-size: 0.7rem;
 }

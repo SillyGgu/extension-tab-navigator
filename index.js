@@ -151,16 +151,21 @@
         nav.classList.add('etn-theme-' + currentTheme);
 		nav.innerHTML =
 			'<div id="etn-toolbar">' +
-				'<span class="etn-toolbar-label">너비</span>' +
-				'<input id="etn-width-slider" type="range" min="30" max="100" step="1" value="' + loadWidth() + '" />' +
-				'<span id="etn-width-value" class="etn-toolbar-value">' + loadWidth() + '%</span>' +
+				'<div class="etn-width-group">' +
+					'<span class="etn-toolbar-label">너비</span>' +
+					'<input id="etn-width-slider" type="range" min="30" max="100" step="1" value="' + loadWidth() + '" />' +
+					'<span id="etn-width-value" class="etn-toolbar-value">' + loadWidth() + '%</span>' +
+				'</div>' +
 				'<div class="etn-toolbar-sep"></div>' +
-				'<button id="etn-settings-btn" class="etn-toolbar-btn" title="설정">' +
-					'<i class="fa-solid fa-gear"></i>' +
-				'</button>' +
-				'<button id="etn-theme-toggle" class="etn-toolbar-btn" title="라이트 모드로 전환">' +
-					'<i class="fa-solid ' + (currentTheme === 'dark' ? 'fa-sun' : 'fa-moon') + '"></i>' +
-				'</button>' +
+				'<div class="etn-toolbar-actions">' +
+					'<button id="etn-settings-btn" class="etn-toolbar-btn" title="설정 (고정/이름변경)">' +
+						'<i class="fa-solid fa-sliders"></i>' +
+					'</button>' +
+					'<div class="etn-toolbar-divider"></div>' +
+					'<button id="etn-theme-toggle" class="etn-toolbar-btn" title="' + (currentTheme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환') + '">' +
+						'<i class="fa-solid ' + (currentTheme === 'dark' ? 'fa-sun' : 'fa-moon') + '"></i>' +
+					'</button>' +
+				'</div>' +
 			'</div>' +
 			'<div id="etn-scroll-bar"><div id="etn-icon-track"></div></div>' +
 			'<div id="etn-panel-area"></div>';
@@ -204,7 +209,7 @@
             : (pinnedIds.find(function(id) { return panels.find(function(p) { return p.id === id; }); }) || panels[0].id);
         setActive(startId);
 
-        setupScrollInteractions(nav.querySelector('#etn-scroll-bar'));
+        setupScrollInteractions(nav.querySelector('#etn-icon-track'));
 
         const slider   = nav.querySelector('#etn-width-slider');
         const widthVal = nav.querySelector('#etn-width-value');
@@ -222,9 +227,6 @@
             saveTheme(next);
             applyTheme(next);
         });
-		nav.querySelector('#etn-settings-btn').addEventListener('pointerdown', function(e) {
-			e.stopPropagation();
-		});
 		nav.querySelector('#etn-settings-btn').addEventListener('click', function(e) {
 			e.stopPropagation();
 			var existing = document.getElementById('etn-settings-popup');
@@ -261,11 +263,10 @@
     // ── Render icon bar ────────────────────────────────────────────────────────
     function renderIcons(trackEl) {
         trackEl.innerHTML = '';
-        const ordered = [
-            ...pinnedIds.map(function(id) { return panels.find(function(p) { return p.id === id; }); }).filter(Boolean),
-            ...panels.filter(function(p) { return !isPinned(p.id); }),
-        ];
-        ordered.forEach(function(p) {
+        const pinned   = pinnedIds.map(function(id) { return panels.find(function(p) { return p.id === id; }); }).filter(Boolean);
+        const unpinned = panels.filter(function(p) { return !isPinned(p.id); });
+
+        function makeAppIcon(p) {
             const btn = document.createElement('div');
             btn.className = 'etn-icon-btn' +
                 (isPinned(p.id) ? ' etn-pinned' : '') +
@@ -275,29 +276,33 @@
             btn.setAttribute('tabindex', '0');
             btn.setAttribute('role', 'button');
             btn.innerHTML =
-                '<div class="etn-icon-inner">' +
-                    '<i class="fa-solid ' + p.icon + '"></i>' +
-                    '<div class="etn-pin-dot" title="고정 / 해제">' +
-                        '<i class="fa-solid fa-thumbtack' + (isPinned(p.id) ? '' : ' fa-rotate-90') + '"></i>' +
-                    '</div>' +
-                '</div>' +
+                '<div class="etn-pin-dot"></div>' +
+                '<div class="etn-icon-inner"><i class="fa-solid ' + p.icon + '"></i></div>' +
                 '<span class="etn-icon-label">' + p.label + '</span>';
 
-            btn.addEventListener('click', function(e) {
-                if (e.target.closest('.etn-pin-dot')) return;
-                setActive(p.id);
-            });
-			btn.querySelector('.etn-pin-dot').addEventListener('click', function(e) {
-				var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-				if (isTouchDevice) { e.stopPropagation(); return; }
-                e.stopPropagation();
+            btn.addEventListener('click', function(e) { setActive(p.id); });
+            btn.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
                 togglePin(p.id);
             });
             btn.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') btn.click();
+                if (e.key === 'Enter' || e.key === ' ') setActive(p.id);
             });
-            trackEl.appendChild(btn);
-        });
+            return btn;
+        }
+
+        // 고정 아이콘
+        pinned.forEach(function(p) { trackEl.appendChild(makeAppIcon(p)); });
+
+        // 고정/미고정 사이 구분선 (점선 행 분리)
+        if (pinned.length > 0 && unpinned.length > 0) {
+            const divider = document.createElement('div');
+            divider.id = 'etn-track-divider';
+            trackEl.appendChild(divider);
+        }
+
+        // 미고정 아이콘
+        unpinned.forEach(function(p) { trackEl.appendChild(makeAppIcon(p)); });
     }
 
     // ── Activate panel ──────────────────────────────────
@@ -582,6 +587,8 @@
 	function outsideClickHandler(e) {
 		var popup = document.getElementById('etn-settings-popup');
 		if (!popup) { document.removeEventListener('pointerdown', outsideClickHandler, true); return; }
+		var settingsBtn = document.getElementById('etn-settings-btn');
+		if (settingsBtn && settingsBtn.contains(e.target)) return;
 		if (!popup.contains(e.target)) {
 			closeSettingsPopup();
 		}
@@ -611,42 +618,48 @@
 
     // ── Scroll interactions ────────────────────────────────────────────────────
     function setupScrollInteractions(scrollEl) {
+        // PC: 휠 스크롤 (Shift 없이도 가로 스크롤)
         scrollEl.addEventListener('wheel', function(e) {
-            if (e.shiftKey) { scrollEl.scrollLeft += e.deltaY; e.preventDefault(); }
+            scrollEl.scrollLeft += e.deltaY || e.deltaX;
+            e.preventDefault();
         }, { passive: false });
 
+        // 모바일 터치 스크롤
         var tx = 0, sx = 0;
         scrollEl.addEventListener('touchstart', function(e) {
-            tx = e.touches[0].clientX; sx = scrollEl.scrollLeft;
+            tx = e.touches[0].clientX;
+            sx = scrollEl.scrollLeft;
         }, { passive: true });
         scrollEl.addEventListener('touchmove', function(e) {
             scrollEl.scrollLeft = sx - (e.touches[0].clientX - tx);
         }, { passive: true });
 
-        var isDown = false, startX = 0, scrollLeft = 0, didDrag = false;
+        // PC 마우스 드래그 스크롤
+        var isDown = false, startX = 0, scrollStart = 0, didDrag = false;
         scrollEl.addEventListener('mousedown', function(e) {
-            if (e.target.closest('.etn-icon-btn')) return;
             if (e.target.closest('input, textarea, select, button, a')) return;
             if (e.target.isContentEditable) return;
             isDown = true;
             didDrag = false;
             scrollEl.classList.add('dragging');
-            startX = e.pageX - scrollEl.offsetLeft;
-            scrollLeft = scrollEl.scrollLeft;
+            startX = e.clientX;
+            scrollStart = scrollEl.scrollLeft;
         });
         document.addEventListener('mouseup', function() {
             isDown = false;
-            didDrag = false;
             scrollEl.classList.remove('dragging');
         });
         scrollEl.addEventListener('mousemove', function(e) {
             if (!isDown) return;
-            const delta = e.pageX - scrollEl.offsetLeft - startX;
+            const delta = e.clientX - startX;
             if (Math.abs(delta) > 3) didDrag = true;
             if (!didDrag) return;
             e.preventDefault();
-            scrollEl.scrollLeft = scrollLeft - delta;
+            scrollEl.scrollLeft = scrollStart - delta;
         });
+        scrollEl.addEventListener('click', function(e) {
+            if (didDrag) { e.stopPropagation(); didDrag = false; }
+        }, true);
     }
 
     // ── Init ───────────────────────────────────────────────────────────────────
@@ -973,7 +986,6 @@
         btn.className = 'etn-toolbar-btn' + (qrEnabled ? ' qrext-active' : '');
         btn.title = 'QR UI 확장 설정';
         btn.innerHTML = '<i class="fa-solid fa-qrcode"></i>';
-        btn.addEventListener('pointerdown', e => e.stopPropagation());
         btn.addEventListener('click', e => {
             e.stopPropagation();
             document.getElementById('qrext-popup') ? closeQrextPopup() : openQrextPopup();
@@ -1013,10 +1025,23 @@
                     '</label>' +
                 '</div>' +
                 '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">설정 백업 / 복원</div>' +
+                    '<p class="qrext-backup-hint">폴더 구조, 순서, 활성화 여부를 JSON 파일로 내보내거나 불러옵니다.</p>' +
+                    '<div class="qrext-backup-row">' +
+                        '<button class="qrext-backup-btn qrext-backup-export" id="qrext-export-btn"><i class="fa-solid fa-download"></i> 내보내기</button>' +
+                        '<button class="qrext-backup-btn qrext-backup-import" id="qrext-import-btn"><i class="fa-solid fa-upload"></i> 불러오기</button>' +
+                        '<input type="file" id="qrext-import-file" accept=".json" style="display:none" />' +
+                    '</div>' +
+                '</div>' +
+                '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">초기화</div>' +
+                    '<button class="qrext-reset-btn" id="qrext-reset-btn"><i class="fa-solid fa-rotate-left"></i> 모든 QR 설정 초기화</button>' +
+                '</div>' +
+                '<div class="qrext-section">' +
                     '<div class="qrext-section-title">Edit QR 폴더 관리' +
                         '<button class="qrext-new-folder-btn" id="qrext-new-folder-btn"><i class="fa-solid fa-plus"></i> 새 폴더</button>' +
                     '</div>' +
-                    '<div class="qrext-folder-hint">세트 항목을 드래그해서 폴더로 이동할 수 있습니다.</div>' +
+                    '<div class="qrext-folder-hint">세트 항목을 드래그해서 폴더로 이동 / 같은 폴더 내에서 ↑↓ 순서 변경 가능합니다.</div>' +
                     '<div id="qrext-folder-list"></div>' +
                 '</div>' +
             '</div>';
@@ -1045,9 +1070,70 @@
             refreshQrFolderList(popup);
         });
 
+        // ── 내보내기 ──────────────────────────────────────────────
+        popup.querySelector('#qrext-export-btn').addEventListener('click', () => {
+            const backup = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                qrEnabled: qrEnabled,
+                qrFolders: qrFolders,
+                qrFolderOrder: qrFolderOrder,
+                qrFolded: [...qrFolded],
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = 'qrext_backup_' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+        });
+
+        // ── 불러오기 ──────────────────────────────────────────────
+        const importFile = popup.querySelector('#qrext-import-file');
+        popup.querySelector('#qrext-import-btn').addEventListener('click', () => {
+            importFile.value = '';
+            importFile.click();
+        });
+        importFile.addEventListener('change', () => {
+            const file = importFile.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data || typeof data.qrFolders !== 'object') {
+                        alert('올바른 백업 파일이 아닙니다.');
+                        return;
+                    }
+                    if (!confirm('현재 설정을 백업 파일로 덮어씁니다. 계속할까요?')) return;
+                    qrFolders = data.qrFolders || {};
+                    qrFolderOrder = data.qrFolderOrder || [];
+                    qrFolded = new Set(data.qrFolded || []);
+                    saveQrFolders();
+                    saveQrFolderOrder();
+                    saveQrFolded();
+                    if (typeof data.qrEnabled === 'boolean') {
+                        qrEnabled = data.qrEnabled;
+                        saveQrEnabled(qrEnabled);
+                    }
+                    renderQrextPopup(popup);
+                } catch {
+                    alert('파일을 읽는 중 오류가 발생했습니다.');
+                }
+            };
+            reader.readAsText(file);
+        });
+
         popup.addEventListener('click', e => e.stopPropagation());
         popup.addEventListener('pointerdown', e => e.stopPropagation());
-
+        popup.querySelector('#qrext-reset-btn').addEventListener('click', () => {
+            if (!confirm('QR 확장의 모든 설정(폴더, 순서, 활성화 여부)을 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+            qrFolders = {}; qrFolderOrder = []; qrFolded = new Set(); qrEnabled = true;
+            saveQrFolders(); saveQrFolderOrder(); saveQrFolded(); saveQrEnabled(true);
+            renderQrextPopup(popup);
+        });
         refreshQrFolderList(popup);
     }
 
@@ -1073,17 +1159,19 @@
                         '<i class="fa-solid ' + (isFolded ? 'fa-folder' : 'fa-folder-open') + ' qrext-fr-icon qrext-fr-fold-toggle" data-fname="' + qrEscHtml(fname) + '" title="접기/펼치기" style="cursor:pointer"></i>' +
                         '<span class="qrext-fr-name qrext-fr-fold-toggle" data-fname="' + qrEscHtml(fname) + '" style="cursor:pointer">' + qrEscHtml(fname) + '</span>' +
                         '<span class="qrext-fr-count">' + valid.length + '</span>' +
-                        '<button class="qrext-fr-move-up" data-fname="' + qrEscHtml(fname) + '" title="위로" ' + (isFirst ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
-                        '<button class="qrext-fr-move-down" data-fname="' + qrEscHtml(fname) + '" title="아래로" ' + (isLast ? 'disabled' : '') + '><i class="fa-solid fa-chevron-down"></i></button>' +
+                        '<button class="qrext-fr-move-up" data-fname="' + qrEscHtml(fname) + '" title="폴더 위로" ' + (isFirst ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                        '<button class="qrext-fr-move-down" data-fname="' + qrEscHtml(fname) + '" title="폴더 아래로" ' + (isLast ? 'disabled' : '') + '><i class="fa-solid fa-chevron-down"></i></button>' +
                         '<button class="qrext-fr-rename" data-fname="' + qrEscHtml(fname) + '" title="이름 변경"><i class="fa-solid fa-pencil"></i></button>' +
                         '<button class="qrext-fr-delete" data-fname="' + qrEscHtml(fname) + '" title="폴더 삭제"><i class="fa-solid fa-trash"></i></button>' +
                     '</div>' +
                     (isFolded ? '' :
                     '<div class="qrext-fr-sets">' +
-                        valid.map(s =>
-                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + qrEscHtml(s) + '" data-folder="' + qrEscHtml(fname) + '">' +
+                        valid.map((s, si) =>
+                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + qrEscHtml(s) + '" data-folder="' + qrEscHtml(fname) + '" data-sidx="' + si + '">' +
                                 '<i class="fa-solid fa-grip-vertical qrext-fr-drag"></i>' +
                                 '<span>' + qrEscHtml(s) + '</span>' +
+                                '<button class="qrext-fr-set-move-up" data-set="' + qrEscHtml(s) + '" data-folder="' + qrEscHtml(fname) + '" title="위로" ' + (si === 0 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                                '<button class="qrext-fr-set-move-down" data-set="' + qrEscHtml(s) + '" data-folder="' + qrEscHtml(fname) + '" title="아래로" ' + (si === valid.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-down"></i></button>' +
                                 '<button class="qrext-fr-remove-set" data-set="' + qrEscHtml(s) + '" data-folder="' + qrEscHtml(fname) + '" title="제거"><i class="fa-solid fa-xmark"></i></button>' +
                             '</div>'
                         ).join('') +
@@ -1191,6 +1279,23 @@
             });
         });
 
+        // ── 폴더 내 세트 순서 변경 ↑↓ ─────────────────────────────
+        listEl.querySelectorAll('.qrext-fr-set-move-up, .qrext-fr-set-move-down').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const { set: setName, folder: fname } = btn.dataset;
+                if (!qrFolders[fname]) return;
+                const arr = qrFolders[fname];
+                const idx = arr.indexOf(setName);
+                if (idx === -1) return;
+                const isUp = btn.classList.contains('qrext-fr-set-move-up');
+                const swapIdx = isUp ? idx - 1 : idx + 1;
+                if (swapIdx < 0 || swapIdx >= arr.length) return;
+                [arr[idx], arr[swapIdx]] = [arr[swapIdx], arr[idx]];
+                saveQrFolders();
+                refreshQrFolderList(popup);
+            });
+        });
         // + 버튼으로 세트 추가 (모달)
         listEl.querySelectorAll('.qrext-fr-add-set-btn').forEach(btn => {
             btn.addEventListener('click', e => {
@@ -1333,6 +1438,9 @@
     function qrextOutsideHandler(e) {
         const popup = document.getElementById('qrext-popup');
         if (!popup) { document.removeEventListener('pointerdown', qrextOutsideHandler, true); return; }
+        const toggleBtn = document.getElementById('qrext-toggle-btn');
+        if (toggleBtn && toggleBtn.contains(e.target)) return;
+        if (document.getElementById('qrext-set-pick-modal')) return;
         if (!popup.contains(e.target)) closeQrextPopup();
     }
 
@@ -1495,7 +1603,9 @@
     function outsideHandler(e) {
         const p = document.getElementById('qrmaker-popup');
         if (!p) { document.removeEventListener('pointerdown', outsideHandler, true); return; }
-        if (!p.contains(e.target) && e.target.id !== 'qrmaker-open-btn') close();
+        const makerBtn = document.getElementById('qrmaker-open-btn');
+        if (makerBtn && makerBtn.contains(e.target)) return;
+        if (!p.contains(e.target)) close();
     }
 
     function open() {
@@ -1962,7 +2072,6 @@
         btn.className = 'etn-toolbar-btn';
         btn.title = 'QR 제작 도우미';
         btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>';
-        btn.addEventListener('pointerdown', e => e.stopPropagation());
         btn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
         if (settingsBtn) settingsBtn.insertAdjacentElement('beforebegin', btn);
         else toolbar.appendChild(btn);
@@ -1977,5 +2086,677 @@
 
     const toolbarObserver = new MutationObserver(() => installMakerBtn());
     toolbarObserver.observe(document.body, { subtree: true, childList: true });
+
+
+/* ══════════════════════════════════════════════════════════════
+       PRESET MANAGER
+    ══════════════════════════════════════════════════════════════ */
+
+    const PRESET_FOLDERS_KEY     = 'prmgr_folders';
+    const PRESET_FOLDED_KEY      = 'prmgr_folded';
+    const PRESET_FOLDER_ORDER_KEY= 'prmgr_folder_order';
+
+    let prmFolders     = prmLoadFolders();
+    let prmFolded      = prmLoadFolded();
+    let prmFolderOrder = prmLoadFolderOrder();
+
+    function prmLoadFolders()     { try { return JSON.parse(localStorage.getItem(PRESET_FOLDERS_KEY)) || {}; } catch { return {}; } }
+    function prmSaveFolders()     { try { localStorage.setItem(PRESET_FOLDERS_KEY, JSON.stringify(prmFolders)); } catch {} }
+    function prmLoadFolded()      { try { return new Set(JSON.parse(localStorage.getItem(PRESET_FOLDED_KEY)) || []); } catch { return new Set(); } }
+    function prmSaveFolded()      { try { localStorage.setItem(PRESET_FOLDED_KEY, JSON.stringify([...prmFolded])); } catch {} }
+    function prmLoadFolderOrder() { try { return JSON.parse(localStorage.getItem(PRESET_FOLDER_ORDER_KEY)) || []; } catch { return []; } }
+    function prmSaveFolderOrder() { try { localStorage.setItem(PRESET_FOLDER_ORDER_KEY, JSON.stringify(prmFolderOrder)); } catch {} }
+	
+    const PRESET_ENABLED_KEY = 'prmgr_enabled';
+    let prmEnabled = (() => { try { const v = localStorage.getItem(PRESET_ENABLED_KEY); return v === null ? true : v === 'true'; } catch { return true; } })();
+    function prmSaveEnabled(v) { try { localStorage.setItem(PRESET_ENABLED_KEY, String(v)); } catch {} }
+
+    function prmEsc(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function prmGetAllPresets() {
+        const sel = document.getElementById('settings_preset_openai');
+        if (!sel) return [];
+        return Array.from(sel.options).map(o => ({ value: o.value, text: o.text.trim() })).filter(o => o.text);
+    }
+
+    function prmGetOrderedFolderNames() {
+        const allKeys = Object.keys(prmFolders);
+        const ordered = prmFolderOrder.filter(n => allKeys.includes(n));
+        allKeys.forEach(n => { if (!ordered.includes(n)) ordered.push(n); });
+        return ordered;
+    }
+
+    /* ── 커스텀 드롭다운 (Preset select 대체) ─────────────────── */
+    function prmInstallDropdown() {
+        const nativeSel = document.getElementById('settings_preset_openai');
+        if (!nativeSel || nativeSel.dataset.prmHooked) return;
+        nativeSel.dataset.prmHooked = '1';
+        nativeSel.style.position = 'absolute';
+        nativeSel.style.visibility = 'hidden';
+        nativeSel.style.pointerEvents = 'none';
+        nativeSel.style.width = '0';
+        nativeSel.style.height = '0';
+        nativeSel.style.overflow = 'hidden';
+        nativeSel.style.opacity = '0';
+		
+        const wrap = document.createElement('div');
+        wrap.id = 'prm-custom-dropdown';
+        wrap.className = 'qrext-custom-dropdown';
+        nativeSel.insertAdjacentElement('afterend', wrap);
+
+        function buildDropdown() {
+            const allPresets = prmGetAllPresets();
+            const inFolder   = new Set();
+            Object.values(prmFolders).forEach(arr => arr.forEach(v => inFolder.add(v)));
+            const ungrouped  = allPresets.filter(p => !inFolder.has(p.value));
+            const currentOpt = nativeSel.selectedOptions[0];
+            const selectedText = currentOpt ? currentOpt.text.trim() : (nativeSel.value || 'Preset 선택...');
+
+            wrap.innerHTML =
+                '<div class="qrext-dd-trigger" role="button" tabindex="0">' +
+                    '<span class="qrext-dd-selected-text">' + prmEsc(selectedText) + '</span>' +
+                    '<i class="fa-solid fa-chevron-down qrext-dd-arrow"></i>' +
+                '</div>' +
+                '<div class="qrext-dd-panel" style="display:none;">' +
+                    '<div class="qrext-dd-search-wrap">' +
+                        '<i class="fa-solid fa-magnifying-glass"></i>' +
+                        '<input class="qrext-dd-search" type="text" placeholder="Preset 검색..." autocomplete="off" />' +
+                    '</div>' +
+                    '<div class="qrext-dd-list"></div>' +
+                '</div>';
+
+            const trigger  = wrap.querySelector('.qrext-dd-trigger');
+            const panel    = wrap.querySelector('.qrext-dd-panel');
+            const listEl   = wrap.querySelector('.qrext-dd-list');
+            const searchEl = wrap.querySelector('.qrext-dd-search');
+            const arrow    = wrap.querySelector('.qrext-dd-arrow');
+            let isOpen = false;
+
+            function openPanel() {
+                const rect = trigger.getBoundingClientRect();
+                panel.style.top    = (rect.bottom + 4) + 'px';
+                panel.style.left   = rect.left + 'px';
+                panel.style.width  = Math.max(rect.width, 280) + 'px';
+                panel.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+                isOpen = true;
+                const nav = document.getElementById('etn-nav');
+                if (nav) {
+                    const isDark = nav.classList.contains('etn-theme-dark');
+                    panel.style.background = isDark ? 'rgba(22, 24, 30, 0.92)' : 'rgba(245, 247, 252, 0.97)';
+                    panel.style.borderColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+                    panel.style.color = isDark ? '#e0e4ef' : '#1e2233';
+                }
+                renderList('');
+                searchEl.value = '';
+                searchEl.focus();
+            }
+            function closePanel() { panel.style.display = 'none'; arrow.style.transform = ''; isOpen = false; }
+
+            trigger.addEventListener('click', () => isOpen ? closePanel() : openPanel());
+            trigger.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isOpen ? closePanel() : openPanel(); } });
+            searchEl.addEventListener('input', () => renderList(searchEl.value));
+
+            const outsideClose = e => { if (!wrap.contains(e.target)) closePanel(); };
+            document.addEventListener('pointerdown', outsideClose);
+            wrap._outsideClose = outsideClose;
+			
+            function selectPreset(value) {
+                nativeSel.value = value;
+                nativeSel.dispatchEvent(new Event('change', { bubbles: true }));
+                closePanel();
+            }
+
+            function renderList(query) {
+                const q = query.trim().toLowerCase();
+                listEl.innerHTML = '';
+                const orderedFolders = prmGetOrderedFolderNames();
+
+                const allP = prmGetAllPresets();
+                orderedFolders.forEach(fname => {
+                    const values  = prmFolders[fname] || [];
+                    const filtered = values.map(v => allP.find(p => p.value === v)).filter(p => p && (!q || p.text.toLowerCase().includes(q)));
+                    if (!filtered.length) return;
+                    const isFolded = prmFolded.has(fname);
+                    const folderEl = document.createElement('div');
+                    folderEl.className = 'qrext-dd-folder';
+                    folderEl.innerHTML =
+                        '<div class="qrext-dd-folder-header">' +
+                            '<i class="fa-solid ' + (isFolded ? 'fa-folder' : 'fa-folder-open') + ' qrext-folder-icon prm-folder-icon"></i>' +
+                            '<span class="qrext-dd-folder-name">' + prmEsc(fname) + '</span>' +
+                            '<span class="qrext-dd-folder-count">' + filtered.length + '</span>' +
+                            '<i class="fa-solid ' + (isFolded ? 'fa-chevron-right' : 'fa-chevron-down') + ' qrext-folder-chevron"></i>' +
+                        '</div>';
+                    const itemsEl = document.createElement('div');
+                    itemsEl.className = 'qrext-dd-folder-items' + (isFolded && !q ? ' qrext-dd-folded' : '');
+                    filtered.forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = 'qrext-dd-item' + (p.value === nativeSel.value ? ' qrext-dd-item-active' : '');
+                        item.textContent = p.text;
+                        item.addEventListener('click', () => selectPreset(p.value));
+                        itemsEl.appendChild(item);
+                    });
+                    folderEl.appendChild(itemsEl);
+                    folderEl.querySelector('.qrext-dd-folder-header').addEventListener('click', () => {
+                        if (q) return;
+                        if (prmFolded.has(fname)) prmFolded.delete(fname); else prmFolded.add(fname);
+                        prmSaveFolded();
+                        renderList(searchEl.value);
+                    });
+                    listEl.appendChild(folderEl);
+                });
+
+                const ungroupedFiltered = ungrouped.filter(p => !q || p.text.toLowerCase().includes(q));
+                if (ungroupedFiltered.length) {
+                    if (orderedFolders.length) {
+                        const lbl = document.createElement('div');
+                        lbl.className = 'qrext-dd-group-label';
+                        lbl.textContent = '미분류';
+                        listEl.appendChild(lbl);
+                    }
+                    ungroupedFiltered.forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = 'qrext-dd-item' + (p.value === nativeSel.value ? ' qrext-dd-item-active' : '');
+                        item.textContent = p.text;
+                        item.addEventListener('click', () => selectPreset(p.value));
+                        listEl.appendChild(item);
+                    });
+                }
+                if (!listEl.children.length) listEl.innerHTML = '<div class="qrext-dd-empty">검색 결과 없음</div>';
+            }
+        }
+
+        buildDropdown();
+
+        const syncDisplayText = () => {
+            const opt = nativeSel.selectedOptions[0];
+            const dd  = wrap.querySelector('.qrext-dd-selected-text');
+            if (dd && opt) dd.textContent = opt.text.trim();
+        };
+        nativeSel.addEventListener('change', syncDisplayText);
+
+        // jQuery trigger('change') 대응 (Quick Preset 등 외부 확장 호환)
+        if (window.jQuery) {
+            window.jQuery(nativeSel).on('change.prmSync', syncDisplayText);
+        }
+
+        const obs = new MutationObserver(() => {
+            obs.disconnect();
+            if (wrap._outsideClose) document.removeEventListener('pointerdown', wrap._outsideClose);
+            wrap.remove();
+            delete nativeSel.dataset.prmHooked;
+            nativeSel.style.position = '';
+            nativeSel.style.visibility = '';
+            nativeSel.style.pointerEvents = '';
+            nativeSel.style.width = '';
+            nativeSel.style.height = '';
+            nativeSel.style.overflow = '';
+            nativeSel.style.opacity = '';
+            if (window.jQuery) window.jQuery(nativeSel).off('change.prmSync');
+            if (prmEnabled) prmInstallDropdown();
+        });
+        obs.observe(nativeSel, { childList: true });
+    }
+
+    function prmRemoveDropdown() {
+        const wrap = document.getElementById('prm-custom-dropdown');
+        if (wrap) {
+            if (wrap._outsideClose) document.removeEventListener('pointerdown', wrap._outsideClose);
+            wrap.remove();
+        }
+        const sel = document.getElementById('settings_preset_openai');
+        if (sel) {
+            delete sel.dataset.prmHooked;
+            sel.style.position = '';
+            sel.style.visibility = '';
+            sel.style.pointerEvents = '';
+            sel.style.width = '';
+            sel.style.height = '';
+            sel.style.overflow = '';
+            sel.style.opacity = '';
+            if (window.jQuery) window.jQuery(sel).off('change.prmSync');
+        }
+    }
+
+    function prmRebuildDropdown() {
+        prmRemoveDropdown();
+        prmInstallDropdown();
+    }
+
+    /* ── 툴바 버튼 ────────────────────────────────────────────── */
+    function installPresetBtn() {
+        const toolbar = document.getElementById('etn-toolbar');
+        if (!toolbar || toolbar.querySelector('#etn-preset-btn')) return;
+        const settingsBtn = toolbar.querySelector('#etn-settings-btn');
+        const btn = document.createElement('button');
+		btn.id = 'etn-preset-btn';
+		btn.className = 'etn-toolbar-btn' + (prmEnabled ? ' qrext-active' : '');
+		btn.title = 'Preset 폴더 관리';
+        btn.innerHTML = '<i class="fa-solid fa-layer-group"></i>';
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            document.getElementById('etn-preset-popup') ? closePresetPopup() : openPresetPopup();
+        });
+        if (settingsBtn) settingsBtn.insertAdjacentElement('beforebegin', btn);
+        else toolbar.appendChild(btn);
+    }
+
+    /* ── 팝업 ─────────────────────────────────────────────────── */
+    var prmOutsideHandler = null;
+
+    function openPresetPopup() {
+        if (document.getElementById('etn-preset-popup')) return;
+        const nav = document.getElementById('etn-nav');
+        if (!nav) return;
+        const popup = document.createElement('div');
+        popup.id = 'etn-preset-popup';
+        renderPresetPopup(popup);
+        nav.appendChild(popup);
+        setTimeout(() => {
+            prmOutsideHandler = e => {
+                const p = document.getElementById('etn-preset-popup');
+                if (!p) { document.removeEventListener('pointerdown', prmOutsideHandler, true); return; }
+                if (document.getElementById('prm-pick-modal')) return;
+                const presetBtn = document.getElementById('etn-preset-btn');
+                if (presetBtn && presetBtn.contains(e.target)) return;
+                if (!p.contains(e.target)) closePresetPopup();
+            };
+            document.addEventListener('pointerdown', prmOutsideHandler, true);
+        }, 0);
+    }
+
+    function closePresetPopup() {
+        const p = document.getElementById('etn-preset-popup');
+        if (p) p.remove();
+        if (prmOutsideHandler) { document.removeEventListener('pointerdown', prmOutsideHandler, true); prmOutsideHandler = null; }
+    }
+
+    function renderPresetPopup(popup) {
+        popup.innerHTML =
+            '<div class="qrext-popup-header">' +
+                '<span class="qrext-popup-title"><i class="fa-solid fa-layer-group"></i> Preset 폴더 관리</span>' +
+                '<button class="qrext-popup-close"><i class="fa-solid fa-xmark"></i></button>' +
+            '</div>' +
+            '<div class="qrext-popup-body">' +
+                '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">전체 기능</div>' +
+                    '<label class="qrext-toggle-row">' +
+                        '<span>Preset 폴더 UI 활성화</span>' +
+                        '<div class="qrext-toggle ' + (prmEnabled ? 'qrext-toggle-on' : '') + '" id="prm-main-toggle" role="switch" tabindex="0" aria-checked="' + prmEnabled + '">' +
+                            '<div class="qrext-toggle-knob"></div>' +
+                        '</div>' +
+                    '</label>' +
+                '</div>' +
+                '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">설정 백업 / 복원</div>' +
+                    '<p class="qrext-backup-hint">폴더 구조와 순서를 JSON 파일로 내보내거나 불러옵니다.</p>' +
+                    '<div class="qrext-backup-row">' +
+                        '<button class="qrext-backup-btn qrext-backup-export" id="prm-export-btn"><i class="fa-solid fa-download"></i> 내보내기</button>' +
+                        '<button class="qrext-backup-btn qrext-backup-import" id="prm-import-btn"><i class="fa-solid fa-upload"></i> 불러오기</button>' +
+                        '<input type="file" id="prm-import-file" accept=".json" style="display:none" />' +
+                    '</div>' +
+                '</div>' +
+                '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">초기화</div>' +
+                    '<button class="qrext-reset-btn" id="prm-reset-btn"><i class="fa-solid fa-rotate-left"></i> 모든 Preset 설정 초기화</button>' +
+                '</div>' +
+                '<div class="qrext-section">' +
+                    '<div class="qrext-section-title">Preset 폴더 관리' +
+                        '<button class="qrext-new-folder-btn" id="prm-new-folder-btn"><i class="fa-solid fa-plus"></i> 새 폴더</button>' +
+                    '</div>' +
+                    '<div class="qrext-folder-hint">Preset 항목을 드래그해서 폴더로 이동 / 폴더 내에서 ↑↓ 순서 변경 가능합니다.</div>' +
+                    '<div id="prm-folder-list"></div>' +
+                '</div>' +
+            '</div>';
+
+        popup.querySelector('.qrext-popup-close').addEventListener('click', closePresetPopup);
+
+        const toggle = popup.querySelector('#prm-main-toggle');
+        const doToggle = () => {
+            prmEnabled = !prmEnabled;
+            prmSaveEnabled(prmEnabled);
+            toggle.classList.toggle('qrext-toggle-on', prmEnabled);
+            toggle.setAttribute('aria-checked', String(prmEnabled));
+            const presetBtn = document.getElementById('etn-preset-btn');
+            if (presetBtn) presetBtn.classList.toggle('qrext-active', prmEnabled);
+            if (prmEnabled) prmInstallDropdown(); else prmRemoveDropdown();
+        };
+        toggle.addEventListener('click', doToggle);
+        toggle.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') doToggle(); });
+
+        popup.querySelector('#prm-export-btn').addEventListener('click', () => {
+            const backup = { version: 1, exportedAt: new Date().toISOString(), prmEnabled, prmFolders, prmFolderOrder, prmFolded: [...prmFolded] };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'preset_backup_' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+        });
+
+        const importFile = popup.querySelector('#prm-import-file');
+        popup.querySelector('#prm-import-btn').addEventListener('click', () => { importFile.value = ''; importFile.click(); });
+        importFile.addEventListener('change', () => {
+            const file = importFile.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data || typeof data.prmFolders !== 'object') { alert('올바른 백업 파일이 아닙니다.'); return; }
+                    if (!confirm('현재 설정을 백업 파일로 덮어씁니다. 계속할까요?')) return;
+                    prmFolders = data.prmFolders || {};
+                    prmFolderOrder = data.prmFolderOrder || [];
+                    prmFolded = new Set(data.prmFolded || []);
+                    prmSaveFolders(); prmSaveFolderOrder(); prmSaveFolded();
+                    if (typeof data.prmEnabled === 'boolean') { prmEnabled = data.prmEnabled; prmSaveEnabled(prmEnabled); }
+                    renderPresetPopup(popup);
+                } catch { alert('파일을 읽는 중 오류가 발생했습니다.'); }
+            };
+            reader.readAsText(file);
+        });
+
+        popup.querySelector('#prm-new-folder-btn').addEventListener('click', () => {
+            const name = prompt('새 폴더 이름:');
+            if (!name || !name.trim()) return;
+            const t = name.trim();
+            if (prmFolders[t]) { alert('이미 존재하는 이름입니다.'); return; }
+            prmFolders[t] = [];
+            prmSaveFolders();
+            refreshPresetFolderList(popup);
+        });
+
+        popup.addEventListener('click', e => e.stopPropagation());
+        popup.addEventListener('pointerdown', e => e.stopPropagation());
+        popup.querySelector('#prm-reset-btn').addEventListener('click', () => {
+            if (!confirm('Preset 확장의 모든 설정(폴더, 순서, 활성화 여부)을 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+            prmFolders = {}; prmFolderOrder = []; prmFolded = new Set(); prmEnabled = true;
+            prmSaveFolders(); prmSaveFolderOrder(); prmSaveFolded(); prmSaveEnabled(true);
+            renderPresetPopup(popup);
+        });
+        refreshPresetFolderList(popup);
+    }
+    function refreshPresetFolderList(popup) {
+        const listEl = popup.querySelector('#prm-folder-list');
+        if (!listEl) return;
+        const allPresets = prmGetAllPresets();
+        const inFolder   = new Set();
+        Object.values(prmFolders).forEach(arr => arr.forEach(v => inFolder.add(v)));
+        const ungrouped  = allPresets.filter(p => !inFolder.has(p.value));
+        const orderedNames = prmGetOrderedFolderNames();
+
+        let html = '';
+        orderedNames.forEach((fname, idx) => {
+            const values  = prmFolders[fname] || [];
+            const valid   = values.map(v => allPresets.find(p => p.value === v)).filter(Boolean);
+            const isFolded = prmFolded.has('popup_' + fname);
+            const isFirst  = idx === 0;
+            const isLast   = idx === orderedNames.length - 1;
+            html +=
+                '<div class="qrext-folder-row" data-fname="' + prmEsc(fname) + '">' +
+                    '<div class="qrext-folder-row-header">' +
+                        '<i class="fa-solid ' + (isFolded ? 'fa-folder' : 'fa-folder-open') + ' qrext-fr-icon qrext-fr-fold-toggle" data-fname="' + prmEsc(fname) + '" title="접기/펼치기" style="cursor:pointer"></i>' +
+                        '<span class="qrext-fr-name qrext-fr-fold-toggle" data-fname="' + prmEsc(fname) + '" style="cursor:pointer">' + prmEsc(fname) + '</span>' +
+                        '<span class="qrext-fr-count">' + valid.length + '</span>' +
+                        '<button class="qrext-fr-move-up" data-fname="' + prmEsc(fname) + '" title="폴더 위로" ' + (isFirst ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                        '<button class="qrext-fr-move-down" data-fname="' + prmEsc(fname) + '" title="폴더 아래로" ' + (isLast ? 'disabled' : '') + '><i class="fa-solid fa-chevron-down"></i></button>' +
+                        '<button class="qrext-fr-rename" data-fname="' + prmEsc(fname) + '" title="이름 변경"><i class="fa-solid fa-pencil"></i></button>' +
+                        '<button class="qrext-fr-delete" data-fname="' + prmEsc(fname) + '" title="폴더 삭제"><i class="fa-solid fa-trash"></i></button>' +
+                    '</div>' +
+                    (isFolded ? '' :
+                    '<div class="qrext-fr-sets">' +
+                        valid.map((p, si) =>
+                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" data-sidx="' + si + '">' +
+                                '<i class="fa-solid fa-grip-vertical qrext-fr-drag"></i>' +
+                                '<span>' + prmEsc(p.text) + '</span>' +
+                                '<button class="qrext-fr-set-move-up" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" title="위로" ' + (si === 0 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                                '<button class="qrext-fr-set-move-down" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" title="아래로" ' + (si === valid.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                                '<button class="qrext-fr-remove-set" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" title="제거"><i class="fa-solid fa-xmark"></i></button>' +
+                            '</div>'
+                        ).join('') +
+                        '<div class="qrext-fr-drop-zone" data-folder="' + prmEsc(fname) + '">여기에 드롭하여 추가</div>' +
+                        '<button class="qrext-fr-add-set-btn" data-folder="' + prmEsc(fname) + '" title="Preset 추가"><i class="fa-solid fa-plus"></i> Preset 추가</button>' +
+                    '</div>') +
+                '</div>';
+        });
+
+        if (ungrouped.length) {
+            html +=
+                '<div class="qrext-folder-row qrext-ungrouped">' +
+                    '<div class="qrext-folder-row-header">' +
+                        '<i class="fa-solid fa-layer-group qrext-fr-icon" style="color:var(--etn-text-dim)"></i>' +
+                        '<span class="qrext-fr-name" style="color:var(--etn-text-dim)">미분류</span>' +
+                        '<span class="qrext-fr-count">' + ungrouped.length + '</span>' +
+                    '</div>' +
+                    '<div class="qrext-fr-sets">' +
+                        ungrouped.map(p =>
+                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + prmEsc(p.value) + '" data-folder="">' +
+                                '<i class="fa-solid fa-grip-vertical qrext-fr-drag"></i>' +
+                                '<span>' + prmEsc(p.text) + '</span>' +
+                            '</div>'
+                        ).join('') +
+                    '</div>' +
+                '</div>';
+        }
+
+        listEl.innerHTML = html || '<div class="qrext-empty-hint">Preset이 없습니다.</div>';
+        bindPresetFolderEvents(popup);
+        if (prmEnabled) prmRebuildDropdown(); else prmRemoveDropdown();
+    }
+
+    function bindPresetFolderEvents(popup) {
+        const listEl = popup.querySelector('#prm-folder-list');
+        if (!listEl) return;
+
+        listEl.querySelectorAll('.qrext-fr-fold-toggle').forEach(el => {
+            el.addEventListener('click', e => {
+                e.stopPropagation();
+                const key = 'popup_' + el.dataset.fname;
+                if (prmFolded.has(key)) prmFolded.delete(key); else prmFolded.add(key);
+                prmSaveFolded();
+                refreshPresetFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-move-up, .qrext-fr-move-down').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const fname = btn.dataset.fname;
+                prmFolderOrder = [...prmGetOrderedFolderNames()];
+                const idx = prmFolderOrder.indexOf(fname);
+                if (idx === -1) return;
+                const isUp = btn.classList.contains('qrext-fr-move-up');
+                const swapIdx = isUp ? idx - 1 : idx + 1;
+                if (swapIdx < 0 || swapIdx >= prmFolderOrder.length) return;
+                [prmFolderOrder[idx], prmFolderOrder[swapIdx]] = [prmFolderOrder[swapIdx], prmFolderOrder[idx]];
+                prmSaveFolderOrder();
+                refreshPresetFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-delete').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const fname = btn.dataset.fname;
+                if (!confirm('폴더 "' + fname + '"를 삭제할까요? (Preset은 미분류로 이동됩니다)')) return;
+                delete prmFolders[fname];
+                prmSaveFolders();
+                refreshPresetFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-rename').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const fname = btn.dataset.fname;
+                const newName = prompt('새 폴더 이름:', fname);
+                if (!newName || !newName.trim() || newName.trim() === fname) return;
+                const t = newName.trim();
+                if (prmFolders[t]) { alert('이미 존재하는 이름입니다.'); return; }
+                prmFolders[t] = prmFolders[fname];
+                delete prmFolders[fname];
+                if (prmFolded.has('popup_' + fname)) { prmFolded.delete('popup_' + fname); prmFolded.add('popup_' + t); prmSaveFolded(); }
+                prmSaveFolders();
+                refreshPresetFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-remove-set').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const { set: val, folder: fname } = btn.dataset;
+                if (!prmFolders[fname]) return;
+                prmFolders[fname] = prmFolders[fname].filter(v => v !== val);
+                prmSaveFolders();
+                refreshPresetFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-set-move-up, .qrext-fr-set-move-down').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const { set: val, folder: fname } = btn.dataset;
+                if (!prmFolders[fname]) return;
+                const arr = prmFolders[fname];
+                const idx = arr.indexOf(val);
+                if (idx === -1) return;
+                const isUp = btn.classList.contains('qrext-fr-set-move-up');
+                const swapIdx = isUp ? idx - 1 : idx + 1;
+                if (swapIdx < 0 || swapIdx >= arr.length) return;
+                [arr[idx], arr[swapIdx]] = [arr[swapIdx], arr[idx]];
+                prmSaveFolders();
+                refreshPresetFolderList(popup);
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-add-set-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                openPresetPickModal(btn.dataset.folder, popup);
+            });
+        });
+
+        let dragVal = null, dragFrom = null;
+        listEl.querySelectorAll('.qrext-fr-set-item[draggable="true"]').forEach(item => {
+            item.addEventListener('dragstart', e => {
+                dragVal = item.dataset.set; dragFrom = item.dataset.folder;
+                item.classList.add('qrext-fr-dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', () => {
+                item.classList.remove('qrext-fr-dragging');
+                listEl.querySelectorAll('.qrext-fr-drop-zone').forEach(z => z.classList.remove('qrext-drop-active'));
+            });
+        });
+
+        listEl.querySelectorAll('.qrext-fr-drop-zone').forEach(zone => {
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('qrext-drop-active'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('qrext-drop-active'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('qrext-drop-active');
+                const toFolder = zone.dataset.folder;
+                if (!dragVal || !toFolder) return;
+                if (dragFrom && prmFolders[dragFrom]) prmFolders[dragFrom] = prmFolders[dragFrom].filter(v => v !== dragVal);
+                if (prmFolders[toFolder] && !prmFolders[toFolder].includes(dragVal)) prmFolders[toFolder].push(dragVal);
+                prmSaveFolders();
+                refreshPresetFolderList(popup);
+                dragVal = null; dragFrom = null;
+            });
+        });
+    }
+
+    function openPresetPickModal(fname, popup) {
+        if (document.getElementById('prm-pick-modal')) return;
+        const allPresets = prmGetAllPresets();
+        const already    = new Set(prmFolders[fname] || []);
+        const inOther    = new Set();
+        Object.entries(prmFolders).forEach(([f, vals]) => { if (f === fname) return; vals.forEach(v => inOther.add(v)); });
+        const pickable   = allPresets.filter(p => !inOther.has(p.value));
+
+        const modal = document.createElement('div');
+        modal.id = 'prm-pick-modal';
+        modal.className = 'qrext-set-pick-modal';
+
+        ['click','pointerdown','mousedown','touchstart','touchend'].forEach(evtName => {
+            modal.addEventListener(evtName, e => { if (e.target !== modal) e.stopPropagation(); });
+        });
+
+        function renderModal(query, preserveScroll) {
+            const listEl = modal.querySelector('.qrext-set-pick-list');
+            const scrollTop = (preserveScroll && listEl) ? listEl.scrollTop : 0;
+            const q = query.trim().toLowerCase();
+            const filtered = pickable.filter(p => !q || p.text.toLowerCase().includes(q));
+            const listHtml = filtered.length
+                ? filtered.map(p =>
+                    '<div class="qrext-set-pick-item' + (already.has(p.value) ? ' qrext-pick-selected' : '') + '" data-value="' + prmEsc(p.value) + '">' +
+                        '<i class="fa-solid ' + (already.has(p.value) ? 'fa-check' : 'fa-plus') + ' qrext-pick-icon"></i>' +
+                        prmEsc(p.text) +
+                    '</div>'
+                ).join('')
+                : '<div class="qrext-set-pick-empty">검색 결과 없음</div>';
+
+            if (!modal.querySelector('.qrext-set-pick-inner')) {
+                modal.innerHTML =
+                    '<div class="qrext-set-pick-inner">' +
+                        '<div class="qrext-set-pick-header">' +
+                            '<span><i class="fa-solid fa-folder" style="margin-right:6px;color:var(--etn-accent)"></i>' + prmEsc(fname) + ' — Preset 추가</span>' +
+                            '<button class="qrext-set-pick-close"><i class="fa-solid fa-xmark"></i></button>' +
+                        '</div>' +
+                        '<div class="qrext-set-pick-search-wrap">' +
+                            '<i class="fa-solid fa-magnifying-glass"></i>' +
+                            '<input class="qrext-set-pick-search" type="text" placeholder="Preset 검색..." autocomplete="off" />' +
+                        '</div>' +
+                        '<div class="qrext-set-pick-list"></div>' +
+                    '</div>';
+
+                modal.querySelector('.qrext-set-pick-close').addEventListener('click', e => { e.stopPropagation(); modal.remove(); });
+                modal.querySelector('.qrext-set-pick-search').addEventListener('input', function() { renderModal(this.value, false); });
+                modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+                setTimeout(() => modal.querySelector('.qrext-set-pick-search').focus(), 0);
+            }
+
+            const newListEl = modal.querySelector('.qrext-set-pick-list');
+            newListEl.innerHTML = listHtml;
+            if (preserveScroll) newListEl.scrollTop = scrollTop;
+
+            newListEl.querySelectorAll('.qrext-set-pick-item').forEach(item => {
+                item.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const val = item.dataset.value;
+                    if (!prmFolders[fname]) prmFolders[fname] = [];
+                    if (already.has(val)) {
+                        prmFolders[fname] = prmFolders[fname].filter(v => v !== val);
+                        already.delete(val);
+                    } else {
+                        prmFolders[fname].push(val);
+                        already.add(val);
+                    }
+                    prmSaveFolders();
+                    refreshPresetFolderList(popup);
+                    renderModal(modal.querySelector('.qrext-set-pick-search').value, true);
+                });
+            });
+        }
+
+        renderModal('', false);
+        const etnNav = document.getElementById('etn-nav');
+        (etnNav || document.body).appendChild(modal);
+    }
+
+    /* ── 초기화 ───────────────────────────────────────────────── */
+    const presetInitTimer = setInterval(() => {
+        if (document.getElementById('etn-toolbar') && document.getElementById('settings_preset_openai')) {
+            installPresetBtn();
+            if (prmEnabled) prmInstallDropdown();
+            clearInterval(presetInitTimer);
+        }
+    }, 300);
+
+    const presetObserver = new MutationObserver(() => {
+        installPresetBtn();
+        if (prmEnabled && document.getElementById('settings_preset_openai') && !document.getElementById('prm-custom-dropdown')) {
+            prmInstallDropdown();
+        }
+    });
+    presetObserver.observe(document.body, { subtree: true, childList: true });
 
 })();
