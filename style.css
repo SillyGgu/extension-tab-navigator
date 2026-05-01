@@ -6,6 +6,7 @@
 #etn-nav.etn-theme-dark {
     --etn-bg:           rgba(22, 24, 30, 0.92);
     --etn-bg2:          rgba(30, 33, 42, 0.88);
+    --etn-popup-bg:     rgb(22, 24, 30);
     --etn-border:       rgba(255, 255, 255, 0.10);
     --etn-accent:       #5b9cf6;
     --etn-accent-bg:    rgba(91, 156, 246, 0.18);
@@ -23,6 +24,7 @@
 #etn-nav.etn-theme-light {
     --etn-bg:           rgba(245, 247, 252, 0.97);
     --etn-bg2:          rgba(235, 238, 248, 0.95);
+    --etn-popup-bg:     rgb(245, 247, 252);
     --etn-border:       rgba(0, 0, 0, 0.10);
     --etn-accent:       #2563eb;
     --etn-accent-bg:    rgba(37, 99, 235, 0.12);
@@ -360,7 +362,7 @@
     max-height: 70vh;
     display: flex;
     flex-direction: column;
-    background: var(--etn-bg);
+    background: var(--etn-popup-bg);
     border: 1px solid var(--etn-border);
     border-radius: 10px;
     box-shadow: var(--etn-shadow);
@@ -369,6 +371,7 @@
     font-size: 0.85rem;
     color: var(--etn-text);
 }
+
 
 #etn-nav {
     position: relative;
@@ -836,7 +839,7 @@
     max-height: clamp(60vh, 75vh, 85vh);
     display: flex;
     flex-direction: column;
-    background: var(--etn-bg);
+    background: var(--etn-popup-bg);
     border: 1px solid var(--etn-border);
     border-radius: 10px;
     box-shadow: var(--etn-shadow);
@@ -1188,7 +1191,7 @@
     color: var(--etn-text);
 }
 .qrext-set-pick-inner {
-    background: var(--etn-bg);
+    background: var(--etn-popup-bg);
     border: 1px solid var(--etn-border);
     border-radius: 10px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.6);
@@ -1389,7 +1392,7 @@
     max-height: 82vh;
     display: flex;
     flex-direction: column;
-    background: var(--etn-bg);
+    background: var(--etn-popup-bg);
     border: 1px solid var(--etn-border);
     border-radius: 10px;
     box-shadow: var(--etn-shadow);
