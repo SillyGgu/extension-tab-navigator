@@ -104,6 +104,39 @@
     function buildNavigator() {
         if (document.getElementById('etn-nav')) return;
 
+        // 모바일 팝업 이탈 방지 스타일 주입
+        if (!document.getElementById('etn-popup-mobile-fix')) {
+            const style = document.createElement('style');
+            style.id = 'etn-popup-mobile-fix';
+            style.textContent = `
+                /* 기본 팝업 제약 */
+                #etn-settings-popup, #qrmaker-popup {
+                    max-width: 95vw !important;
+                    box-sizing: border-box !important;
+                }
+                /* 모바일 대응 (600px 이하) */
+                @media screen and (max-width: 600px) {
+                    #etn-settings-popup, #qrmaker-popup {
+                        position: fixed !important;
+                        top: 50% !important;
+                        left: 50% !important;
+                        transform: translate(-50%, -50%) !important;
+                        width: 90% !important;
+                        max-height: 85vh !important;
+                        overflow-y: auto !important;
+                        margin: 0 !important;
+                        z-index: 10001 !important;
+                        box-shadow: 0 0 20px rgba(0,0,0,0.5) !important;
+                    }
+                    /* 헤더가 너무 길어지지 않게 조정 */
+                    #etn-sp-header, .qrmaker-header {
+                        padding: 10px !important;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         const col1 = document.getElementById('extensions_settings');
         const col2 = document.getElementById('extensions_settings2');
         if (!col1) return;
@@ -1613,11 +1646,21 @@
         if (!nav) return;
         const popup = document.createElement('div');
         popup.id = 'qrmaker-popup';
-        popup.addEventListener('click', e => e.stopPropagation());
-        popup.addEventListener('pointerdown', e => e.stopPropagation());
+        
+        // 터치 및 클릭 이벤트 전파 방지 (모바일 안정성)
+        const stopEv = e => e.stopPropagation();
+        ['click', 'pointerdown', 'mousedown', 'touchstart'].forEach(type => {
+            popup.addEventListener(type, stopEv);
+        });
+
         nav.appendChild(popup);
         render(popup);
-        setTimeout(() => document.addEventListener('pointerdown', outsideHandler, true), 0);
+        
+        // 열릴 때 모바일에서 화면 상단으로 튀는 현상 방지
+        setTimeout(() => {
+            document.addEventListener('pointerdown', outsideHandler, true);
+        }, 0);
+        
         const btn = document.getElementById('qrmaker-open-btn');
         if (btn) btn.classList.add('qrext-active');
     }
