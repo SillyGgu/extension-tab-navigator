@@ -4,8 +4,8 @@
 
 /* ── CSS 변수: 다크 테마 (기본) ─ 공통 구조 ───────────────────────────── */
 #etn-nav.etn-theme-dark {
-    --etn-bg:           rgba(22, 24, 30, 0.92);
-    --etn-bg2:          rgba(30, 33, 42, 0.88);
+    --etn-bg:           rgba(22, 24, 30);
+    --etn-bg2:          rgba(30, 33, 42);
     --etn-popup-bg:     rgb(22, 24, 30);
     --etn-border:       rgba(255, 255, 255, 0.10);
     --etn-accent:       #5b9cf6;
@@ -22,8 +22,8 @@
 
 /* ── CSS 변수: 라이트 테마 (배경 화이트 기반으로 수정) ─────────────────── */
 #etn-nav.etn-theme-light {
-    --etn-bg:           rgba(252, 252, 252, 0.97);
-    --etn-bg2:          rgba(244, 244, 244, 0.95);
+    --etn-bg:           rgba(252, 252, 252);
+    --etn-bg2:          rgba(244, 244, 244);
     --etn-popup-bg:     rgb(255, 255, 255);
     --etn-border:       rgba(0, 0, 0, 0.10);
     --etn-accent:       #2563eb;
@@ -40,62 +40,61 @@
 
 /* ── 컬러 테마별 accent 오버라이드 (다크) ────────────────────────────── */
 #etn-nav.etn-theme-dark.etn-color-beige {
-    --etn-accent:       #d4a96a;
-    --etn-accent-bg:    rgba(212, 169, 106, 0.18);
+    --etn-accent:       #c4a882;
+    --etn-accent-bg:    rgba(196, 168, 130, 0.14);
 }
 #etn-nav.etn-theme-dark.etn-color-lavender {
-    --etn-accent:       #b48ef0;
-    --etn-accent-bg:    rgba(180, 142, 240, 0.18);
+    --etn-accent:       #b8a8e0;
+    --etn-accent-bg:    rgba(184, 168, 224, 0.14);
 }
 #etn-nav.etn-theme-dark.etn-color-pink {
-    --etn-accent:       #f472a8;
-    --etn-accent-bg:    rgba(244, 114, 168, 0.18);
+    --etn-accent:       #f0b8cc;
+    --etn-accent-bg:    rgba(240, 184, 204, 0.14);
 }
 #etn-nav.etn-theme-dark.etn-color-green {
-    --etn-accent:       #4caf82;
-    --etn-accent-bg:    rgba(76, 175, 130, 0.18);
+    --etn-accent:       #8ab898;
+    --etn-accent-bg:    rgba(138, 184, 152, 0.14);
 }
 #etn-nav.etn-theme-dark.etn-color-rose {
-    --etn-accent:       #fb7185;
-    --etn-accent-bg:    rgba(251, 113, 133, 0.18);
+    --etn-accent:       #d4909c;
+    --etn-accent-bg:    rgba(212, 144, 156, 0.14);
 }
 #etn-nav.etn-theme-dark.etn-color-teal {
-    --etn-accent:       #2dd4bf;
-    --etn-accent-bg:    rgba(45, 212, 191, 0.18);
+    --etn-accent:       #6cd8cc;
+    --etn-accent-bg:    rgba(108, 216, 204, 0.14);
 }
 #etn-nav.etn-theme-dark.etn-color-amber {
-    --etn-accent:       #fbbf24;
-    --etn-accent-bg:    rgba(251, 191, 36, 0.18);
+    --etn-accent:       #f0c070;
+    --etn-accent-bg:    rgba(240, 192, 112, 0.14);
 }
-
 /* ── 컬러 테마별 accent 오버라이드 (라이트) ─────────────────────────── */
 #etn-nav.etn-theme-light.etn-color-beige {
-    --etn-accent:       #a0703a;
-    --etn-accent-bg:    rgba(160, 112, 58, 0.10);
+    --etn-accent:       #8c6448;
+    --etn-accent-bg:    rgba(140, 100, 72, 0.08);
 }
 #etn-nav.etn-theme-light.etn-color-lavender {
-    --etn-accent:       #7c4dcc;
-    --etn-accent-bg:    rgba(124, 77, 204, 0.10);
+    --etn-accent:       #7060b0;
+    --etn-accent-bg:    rgba(112, 96, 176, 0.08);
 }
 #etn-nav.etn-theme-light.etn-color-pink {
-    --etn-accent:       #c2185b;
-    --etn-accent-bg:    rgba(194, 24, 91, 0.09);
+    --etn-accent:       #d4708a;
+    --etn-accent-bg:    rgba(212, 112, 138, 0.08);
 }
 #etn-nav.etn-theme-light.etn-color-green {
-    --etn-accent:       #2e7d5e;
-    --etn-accent-bg:    rgba(46, 125, 94, 0.09);
+    --etn-accent:       #5a8a60;
+    --etn-accent-bg:    rgba(90, 138, 96, 0.08);
 }
 #etn-nav.etn-theme-light.etn-color-rose {
-    --etn-accent:       #e11d48;
-    --etn-accent-bg:    rgba(225, 29, 72, 0.09);
+    --etn-accent:       #b76e79;
+    --etn-accent-bg:    rgba(183, 110, 121, 0.08);
 }
 #etn-nav.etn-theme-light.etn-color-teal {
-    --etn-accent:       #0f766e;
-    --etn-accent-bg:    rgba(15, 118, 110, 0.09);
+    --etn-accent:       #1aa89e;
+    --etn-accent-bg:    rgba(26, 168, 158, 0.08);
 }
 #etn-nav.etn-theme-light.etn-color-amber {
-    --etn-accent:       #b45309;
-    --etn-accent-bg:    rgba(180, 83, 9, 0.09);
+    --etn-accent:       #c48c18;
+    --etn-accent-bg:    rgba(196, 140, 24, 0.08);
 }
 
 /* ── Nav container ─────────────────────────────────────────────────────── */
