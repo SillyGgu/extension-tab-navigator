@@ -2,7 +2,7 @@
    Extension Tab Navigator 
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── CSS 변수: 다크 테마 (기본) ────────────────────────────────────────── */
+/* ── CSS 변수: 다크 테마 (기본) ─ 공통 구조 ───────────────────────────── */
 #etn-nav.etn-theme-dark {
     --etn-bg:           rgba(22, 24, 30, 0.92);
     --etn-bg2:          rgba(30, 33, 42, 0.88);
@@ -20,22 +20,82 @@
     --etn-shadow:       0 4px 24px rgba(0,0,0,0.45);
 }
 
-/* ── CSS 변수: 라이트 테마 ─────────────────────────────────────────────── */
+/* ── CSS 변수: 라이트 테마 (배경 화이트 기반으로 수정) ─────────────────── */
 #etn-nav.etn-theme-light {
-    --etn-bg:           rgba(245, 247, 252, 0.97);
-    --etn-bg2:          rgba(235, 238, 248, 0.95);
-    --etn-popup-bg:     rgb(245, 247, 252);
+    --etn-bg:           rgba(250, 250, 250, 0.97);
+    --etn-bg2:          rgba(244, 244, 244, 0.95);
+    --etn-popup-bg:     rgb(250, 250, 250);
     --etn-border:       rgba(0, 0, 0, 0.10);
     --etn-accent:       #2563eb;
-    --etn-accent-bg:    rgba(37, 99, 235, 0.12);
-    --etn-text:         #1e2233;
-    --etn-text-dim:     rgba(30, 34, 51, 0.50);
-    --etn-icon-bg:      rgba(0, 0, 0, 0.05);
+    --etn-accent-bg:    rgba(37, 99, 235, 0.10);
+    --etn-text:         #1a1a1a;
+    --etn-text-dim:     rgba(30, 30, 30, 0.45);
+    --etn-icon-bg:      rgba(0, 0, 0, 0.04);
     --etn-hover-bg:     rgba(0, 0, 0, 0.06);
     --etn-hover-border: rgba(0, 0, 0, 0.18);
-    --etn-active-text:  #1e2233;
-    --etn-pin-bg:       rgba(230, 233, 245, 0.95);
-    --etn-shadow:       0 2px 12px rgba(0,0,0,0.12);
+    --etn-active-text:  #1a1a1a;
+    --etn-pin-bg:       rgba(235, 235, 235, 0.95);
+    --etn-shadow:       0 2px 12px rgba(0,0,0,0.10);
+}
+
+/* ── 컬러 테마별 accent 오버라이드 (다크) ────────────────────────────── */
+#etn-nav.etn-theme-dark.etn-color-beige {
+    --etn-accent:       #d4a96a;
+    --etn-accent-bg:    rgba(212, 169, 106, 0.18);
+}
+#etn-nav.etn-theme-dark.etn-color-lavender {
+    --etn-accent:       #b48ef0;
+    --etn-accent-bg:    rgba(180, 142, 240, 0.18);
+}
+#etn-nav.etn-theme-dark.etn-color-pink {
+    --etn-accent:       #f472a8;
+    --etn-accent-bg:    rgba(244, 114, 168, 0.18);
+}
+#etn-nav.etn-theme-dark.etn-color-green {
+    --etn-accent:       #4caf82;
+    --etn-accent-bg:    rgba(76, 175, 130, 0.18);
+}
+#etn-nav.etn-theme-dark.etn-color-rose {
+    --etn-accent:       #fb7185;
+    --etn-accent-bg:    rgba(251, 113, 133, 0.18);
+}
+#etn-nav.etn-theme-dark.etn-color-teal {
+    --etn-accent:       #2dd4bf;
+    --etn-accent-bg:    rgba(45, 212, 191, 0.18);
+}
+#etn-nav.etn-theme-dark.etn-color-amber {
+    --etn-accent:       #fbbf24;
+    --etn-accent-bg:    rgba(251, 191, 36, 0.18);
+}
+
+/* ── 컬러 테마별 accent 오버라이드 (라이트) ─────────────────────────── */
+#etn-nav.etn-theme-light.etn-color-beige {
+    --etn-accent:       #a0703a;
+    --etn-accent-bg:    rgba(160, 112, 58, 0.10);
+}
+#etn-nav.etn-theme-light.etn-color-lavender {
+    --etn-accent:       #7c4dcc;
+    --etn-accent-bg:    rgba(124, 77, 204, 0.10);
+}
+#etn-nav.etn-theme-light.etn-color-pink {
+    --etn-accent:       #c2185b;
+    --etn-accent-bg:    rgba(194, 24, 91, 0.09);
+}
+#etn-nav.etn-theme-light.etn-color-green {
+    --etn-accent:       #2e7d5e;
+    --etn-accent-bg:    rgba(46, 125, 94, 0.09);
+}
+#etn-nav.etn-theme-light.etn-color-rose {
+    --etn-accent:       #e11d48;
+    --etn-accent-bg:    rgba(225, 29, 72, 0.09);
+}
+#etn-nav.etn-theme-light.etn-color-teal {
+    --etn-accent:       #0f766e;
+    --etn-accent-bg:    rgba(15, 118, 110, 0.09);
+}
+#etn-nav.etn-theme-light.etn-color-amber {
+    --etn-accent:       #b45309;
+    --etn-accent-bg:    rgba(180, 83, 9, 0.09);
 }
 
 /* ── Nav container ─────────────────────────────────────────────────────── */
@@ -545,6 +605,53 @@
     display: flex;
     justify-content: flex-end;
     flex-shrink: 0;
+}
+
+/* ── 테마 팔레트 선택 UI ──────────────────────────────────────────────── */
+.etn-sp-theme-section {
+    margin-bottom: 14px;
+}
+.etn-sp-palette-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+.etn-sp-palette-swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 5px 6px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: border-color 0.15s, background 0.15s;
+    background: transparent;
+    min-width: 44px;
+}
+.etn-sp-palette-swatch:hover {
+    background: var(--etn-hover-bg);
+}
+.etn-sp-palette-swatch.etn-swatch-active {
+    border-color: var(--etn-text);
+    background: var(--etn-icon-bg);
+}
+.etn-swatch-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+}
+.etn-swatch-label {
+    font-size: 0.6rem;
+    color: var(--etn-text-dim);
+    white-space: nowrap;
+}
+.etn-sp-palette-swatch.etn-swatch-active .etn-swatch-label {
+    color: var(--etn-text);
+    font-weight: 600;
 }
 
 #etn-sp-save {

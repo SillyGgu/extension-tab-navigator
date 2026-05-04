@@ -6,6 +6,7 @@
 	const ACTIVE_KEY   = 'etn_active';
 	const WIDTH_KEY    = 'etn_panel_width';
 	const THEME_KEY    = 'etn_theme';
+	const COLOR_KEY    = 'etn_color';
 	const LABELS_KEY   = 'etn_custom_labels';
 	const DUMMY_KEY    = 'etn_dummy_pins';
 
@@ -56,6 +57,15 @@
         try { localStorage.setItem(THEME_KEY, t); }
         catch(e) {}
     }
+    function loadColor() {
+        try { return localStorage.getItem(COLOR_KEY) || 'blue'; }
+        catch { return 'blue'; }
+    }
+    function saveColor(c) {
+        try { localStorage.setItem(COLOR_KEY, c); }
+        catch(e) {}
+    }
+
 
 	function slugify(text) {
 		return text.trim().replace(/\s+/g, '_').replace(/[^\w가-힣]/g, '').toLowerCase()
@@ -254,6 +264,8 @@
             saveWidth(w);
         });
 
+        applyColor(loadColor());
+
         nav.querySelector('#etn-theme-toggle').addEventListener('click', function() {
             const isDark = document.getElementById('etn-nav').classList.contains('etn-theme-dark');
             const next = isDark ? 'light' : 'dark';
@@ -291,6 +303,17 @@
         const icon = btn && btn.querySelector('i');
         if (icon) icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         if (btn)  btn.title = theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환';
+    }
+
+    function applyColor(color) {
+        const nav = document.getElementById('etn-nav');
+        if (!nav) return;
+        nav.classList.forEach(function(cls) {
+            if (cls.startsWith('etn-color-')) nav.classList.remove(cls);
+        });
+        if (color && color !== 'blue') {
+            nav.classList.add('etn-color-' + color);
+        }
     }
 
     // ── Render icon bar ────────────────────────────────────────────────────────
@@ -419,12 +442,37 @@
 				...allItems.filter(function(x) { return !isPinned(x.id); })
 			];
 
+			var currentColor = loadColor();
+			var colorDefs = [
+				{ id: 'blue',     label: '블루',     dark: '#5b9cf6', light: '#2563eb' },
+				{ id: 'beige',    label: '베이지',   dark: '#d4a96a', light: '#a0703a' },
+				{ id: 'lavender', label: '라벤더',   dark: '#b48ef0', light: '#7c4dcc' },
+				{ id: 'pink',     label: '핑크',     dark: '#f472a8', light: '#c2185b' },
+				{ id: 'green',    label: '다크그린', dark: '#4caf82', light: '#2e7d5e' },
+				{ id: 'rose',     label: '로즈',     dark: '#fb7185', light: '#e11d48' },
+				{ id: 'teal',     label: '틸',       dark: '#2dd4bf', light: '#0f766e' },
+				{ id: 'amber',    label: '앰버',     dark: '#fbbf24', light: '#b45309' },
+			];
+			var isDarkNow = document.getElementById('etn-nav').classList.contains('etn-theme-dark');
+
 			popup.innerHTML =
 				'<div id="etn-sp-header">' +
 					'<span id="etn-sp-title"><i class="fa-solid fa-gear"></i> 설정</span>' +
 					'<button id="etn-sp-close"><i class="fa-solid fa-xmark"></i></button>' +
 				'</div>' +
 				'<div id="etn-sp-body">' +
+					'<div class="etn-sp-theme-section">' +
+						'<p class="etn-sp-section-title">포인트 컬러</p>' +
+						'<div class="etn-sp-palette-row">' +
+							colorDefs.map(function(c) {
+								var dotColor = isDarkNow ? c.dark : c.light;
+								return '<button class="etn-sp-palette-swatch' + (currentColor === c.id ? ' etn-swatch-active' : '') + '" data-color="' + c.id + '" title="' + c.label + '">' +
+									'<div class="etn-swatch-dot" style="background:' + dotColor + ';border-color:' + dotColor + '30;"></div>' +
+									'<span class="etn-swatch-label">' + c.label + '</span>' +
+								'</button>';
+							}).join('') +
+						'</div>' +
+					'</div>' +
 					'<p class="etn-sp-section-title">고정 항목 순서 / 이름 변경</p>' +
 					'<p class="etn-sp-hint">고정된 항목은 위에 표시되며 드래그로 순서를 변경할 수 있습니다.<br>🔴 는 삭제된 extension의 더미 데이터입니다.</p>' +
 					'<ul id="etn-sp-list">' +
@@ -469,6 +517,19 @@
 				'</div>';
 
 			popup.querySelector('#etn-sp-close').addEventListener('click', closeSettingsPopup);
+
+			// 팔레트 컬러 선택
+			popup.querySelectorAll('.etn-sp-palette-swatch').forEach(function(swatch) {
+				swatch.addEventListener('click', function(e) {
+					e.stopPropagation();
+					var color = swatch.dataset.color;
+					saveColor(color);
+					applyColor(color);
+					popup.querySelectorAll('.etn-sp-palette-swatch').forEach(function(s) {
+						s.classList.toggle('etn-swatch-active', s.dataset.color === color);
+					});
+				});
+			});
 
 			// 이름 저장 (저장 버튼)
 			popup.querySelector('#etn-sp-save').addEventListener('click', function() {
