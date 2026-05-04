@@ -126,19 +126,22 @@
                 }
                 /* 모바일 대응 (600px 이하) */
                 @media screen and (max-width: 600px) {
-                    #etn-settings-popup, #qrmaker-popup {
+                    #etn-settings-popup, #qrmaker-popup, #qrext-popup, #etn-preset-popup {
                         position: fixed !important;
-                        top: 50% !important;
-                        left: 50% !important;
-                        transform: translate(-50%, -50%) !important;
-                        width: 90% !important;
-                        max-height: 85vh !important;
-                        overflow-y: auto !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        bottom: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        max-height: 100% !important;
+                        height: 100% !important;
+                        transform: none !important;
                         margin: 0 !important;
+                        border-radius: 0 !important;
                         z-index: 10001 !important;
-                        box-shadow: 0 0 20px rgba(0,0,0,0.5) !important;
+                        box-shadow: none !important;
                     }
-                    /* 헤더가 너무 길어지지 않게 조정 */
                     #etn-sp-header, .qrmaker-header {
                         padding: 10px !important;
                     }
