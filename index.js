@@ -553,8 +553,10 @@
 					if (labels[p.id]) p.label = labels[p.id];
 					else p.label = p.originalLabel;
 				});
+				presetObserver.disconnect();
 				renderIcons(track);
 				closeSettingsPopup();
+				presetObserver.observe(document.body, { subtree: true, childList: true });
 			});
 			popup.querySelectorAll('.etn-sp-pin-btn').forEach(function(btn) {
 				btn.addEventListener('click', function(e) {
@@ -2858,11 +2860,16 @@
         }
     }, 300);
 
+    let _presetObserverTimer = null;
     const presetObserver = new MutationObserver(() => {
-        installPresetBtn();
-        if (prmEnabled && document.getElementById('settings_preset_openai') && !document.getElementById('prm-custom-dropdown')) {
-            prmInstallDropdown();
-        }
+        if (_presetObserverTimer) return;
+        _presetObserverTimer = setTimeout(() => {
+            _presetObserverTimer = null;
+            installPresetBtn();
+            if (prmEnabled && document.getElementById('settings_preset_openai') && !document.getElementById('prm-custom-dropdown')) {
+                prmInstallDropdown();
+            }
+        }, 200);
     });
     presetObserver.observe(document.body, { subtree: true, childList: true });
 
