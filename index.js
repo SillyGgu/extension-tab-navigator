@@ -1004,7 +1004,8 @@
                 const q = query.trim().toLowerCase();
                 listEl.innerHTML = '';
 
-                Object.entries(qrFolders).forEach(([fname, sets]) => {
+                getOrderedFolderNames().forEach(fname => {
+                    const sets = qrFolders[fname] || [];
                     const filtered = sets.filter(s => allNames.includes(s) && (!q || s.toLowerCase().includes(q)));
                     if (!filtered.length) return;
                     const isFolded = qrFolded.has(fname);
@@ -1361,6 +1362,8 @@
                 if (qrFolders[t]) { alert('이미 존재하는 이름입니다.'); return; }
                 qrFolders[t] = qrFolders[fname];
                 delete qrFolders[fname];
+                const orderIdx = qrFolderOrder.indexOf(fname);
+                if (orderIdx !== -1) { qrFolderOrder[orderIdx] = t; saveQrFolderOrder(); }
                 if (qrFolded.has(fname)) { qrFolded.delete(fname); qrFolded.add(t); saveQrFolded(); }
                 saveQrFolders();
                 refreshQrFolderList(popup);
@@ -2210,11 +2213,25 @@
     let prmFolderOrder = prmLoadFolderOrder();
 
     function prmLoadFolders()     { try { return JSON.parse(localStorage.getItem(PRESET_FOLDERS_KEY)) || {}; } catch { return {}; } }
-    function prmSaveFolders()     { try { localStorage.setItem(PRESET_FOLDERS_KEY, JSON.stringify(prmFolders)); } catch {} }
+    function prmSaveFolders() {
+        try {
+            const allTexts = new Set(prmGetAllPresets().map(p => p.text));
+            Object.keys(prmFolders).forEach(f => {
+                prmFolders[f] = prmFolders[f].filter(v => allTexts.has(v));
+            });
+            localStorage.setItem(PRESET_FOLDERS_KEY, JSON.stringify(prmFolders));
+        } catch {}
+    }
     function prmLoadFolded()      { try { return new Set(JSON.parse(localStorage.getItem(PRESET_FOLDED_KEY)) || []); } catch { return new Set(); } }
     function prmSaveFolded()      { try { localStorage.setItem(PRESET_FOLDED_KEY, JSON.stringify([...prmFolded])); } catch {} }
     function prmLoadFolderOrder() { try { return JSON.parse(localStorage.getItem(PRESET_FOLDER_ORDER_KEY)) || []; } catch { return []; } }
-    function prmSaveFolderOrder() { try { localStorage.setItem(PRESET_FOLDER_ORDER_KEY, JSON.stringify(prmFolderOrder)); } catch {} }
+    function prmSaveFolderOrder() {
+        try {
+            const allKeys = new Set(Object.keys(prmFolders));
+            prmFolderOrder = prmFolderOrder.filter(n => allKeys.has(n));
+            localStorage.setItem(PRESET_FOLDER_ORDER_KEY, JSON.stringify(prmFolderOrder));
+        } catch {}
+    }
 	
     const PRESET_ENABLED_KEY = 'prmgr_enabled';
     let prmEnabled = (() => { try { const v = localStorage.getItem(PRESET_ENABLED_KEY); return v === null ? true : v === 'true'; } catch { return true; } })();
@@ -2254,11 +2271,8 @@
         nativeSel.insertAdjacentElement('afterend', wrap);
 
         function buildDropdown() {
-            const allPresets = prmGetAllPresets();
-            const inFolder   = new Set();
-            Object.values(prmFolders).forEach(arr => arr.forEach(v => inFolder.add(v)));
-            const ungrouped  = allPresets.filter(p => !inFolder.has(p.value));
             const currentOpt = nativeSel.selectedOptions[0];
+
             const selectedText = currentOpt ? currentOpt.text.trim() : (nativeSel.value || 'Preset 선택...');
 
             wrap.innerHTML =
@@ -2322,9 +2336,13 @@
                 const orderedFolders = prmGetOrderedFolderNames();
 
                 const allP = prmGetAllPresets();
+                const inFolderNow = new Set();
+                Object.values(prmFolders).forEach(arr => arr.forEach(v => inFolderNow.add(v)));
+                const ungrouped = allP.filter(p => !inFolderNow.has(p.text) && !inFolderNow.has(p.value));
+
                 orderedFolders.forEach(fname => {
                     const values  = prmFolders[fname] || [];
-                    const filtered = values.map(v => allP.find(p => p.value === v)).filter(p => p && (!q || p.text.toLowerCase().includes(q)));
+                    const filtered = values.map(v => allP.find(p => p.text === v || p.value === v)).filter(p => p && (!q || p.text.toLowerCase().includes(q)));
                     if (!filtered.length) return;
                     const isFolded = prmFolded.has(fname);
                     const folderEl = document.createElement('div');
@@ -2389,20 +2407,25 @@
             window.jQuery(nativeSel).on('change.prmSync', syncDisplayText);
         }
 
+        let obsDebounceTimer = null;
         const obs = new MutationObserver(() => {
-            obs.disconnect();
-            if (wrap._outsideClose) document.removeEventListener('pointerdown', wrap._outsideClose);
-            wrap.remove();
-            delete nativeSel.dataset.prmHooked;
-            nativeSel.style.position = '';
-            nativeSel.style.visibility = '';
-            nativeSel.style.pointerEvents = '';
-            nativeSel.style.width = '';
-            nativeSel.style.height = '';
-            nativeSel.style.overflow = '';
-            nativeSel.style.opacity = '';
-            if (window.jQuery) window.jQuery(nativeSel).off('change.prmSync');
-            if (prmEnabled) prmInstallDropdown();
+            if (obsDebounceTimer) return;
+            obsDebounceTimer = setTimeout(() => {
+                obsDebounceTimer = null;
+                obs.disconnect();
+                if (wrap._outsideClose) document.removeEventListener('pointerdown', wrap._outsideClose);
+                wrap.remove();
+                delete nativeSel.dataset.prmHooked;
+                nativeSel.style.position = '';
+                nativeSel.style.visibility = '';
+                nativeSel.style.pointerEvents = '';
+                nativeSel.style.width = '';
+                nativeSel.style.height = '';
+                nativeSel.style.overflow = '';
+                nativeSel.style.opacity = '';
+                if (window.jQuery) window.jQuery(nativeSel).off('change.prmSync');
+                if (prmEnabled) prmInstallDropdown();
+            }, 300);
         });
         obs.observe(nativeSel, { childList: true });
     }
@@ -2587,15 +2610,15 @@
         const listEl = popup.querySelector('#prm-folder-list');
         if (!listEl) return;
         const allPresets = prmGetAllPresets();
-        const inFolder   = new Set();
+        const inFolder = new Set();
         Object.values(prmFolders).forEach(arr => arr.forEach(v => inFolder.add(v)));
-        const ungrouped  = allPresets.filter(p => !inFolder.has(p.value));
+        const ungrouped = allPresets.filter(p => !inFolder.has(p.text) && !inFolder.has(p.value));
         const orderedNames = prmGetOrderedFolderNames();
 
         let html = '';
         orderedNames.forEach((fname, idx) => {
             const values  = prmFolders[fname] || [];
-            const valid   = values.map(v => allPresets.find(p => p.value === v)).filter(Boolean);
+            const valid   = values.map(v => allPresets.find(p => p.text === v || p.value === v)).filter(Boolean);
             const isFolded = prmFolded.has('popup_' + fname);
             const isFirst  = idx === 0;
             const isLast   = idx === orderedNames.length - 1;
@@ -2613,12 +2636,12 @@
                     (isFolded ? '' :
                     '<div class="qrext-fr-sets">' +
                         valid.map((p, si) =>
-                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" data-sidx="' + si + '">' +
+                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + prmEsc(p.text) + '" data-folder="' + prmEsc(fname) + '" data-sidx="' + si + '">' +
                                 '<i class="fa-solid fa-grip-vertical qrext-fr-drag"></i>' +
                                 '<span>' + prmEsc(p.text) + '</span>' +
-                                '<button class="qrext-fr-set-move-up" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" title="위로" ' + (si === 0 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
-                                '<button class="qrext-fr-set-move-down" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" title="아래로" ' + (si === valid.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
-                                '<button class="qrext-fr-remove-set" data-set="' + prmEsc(p.value) + '" data-folder="' + prmEsc(fname) + '" title="제거"><i class="fa-solid fa-xmark"></i></button>' +
+                                '<button class="qrext-fr-set-move-up" data-set="' + prmEsc(p.text) + '" data-folder="' + prmEsc(fname) + '" title="위로" ' + (si === 0 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                                '<button class="qrext-fr-set-move-down" data-set="' + prmEsc(p.text) + '" data-folder="' + prmEsc(fname) + '" title="아래로" ' + (si === valid.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-down"></i></button>' +
+                                '<button class="qrext-fr-remove-set" data-set="' + prmEsc(p.text) + '" data-folder="' + prmEsc(fname) + '" title="제거"><i class="fa-solid fa-xmark"></i></button>' +
                             '</div>'
                         ).join('') +
                         '<div class="qrext-fr-drop-zone" data-folder="' + prmEsc(fname) + '">여기에 드롭하여 추가</div>' +
@@ -2637,7 +2660,7 @@
                     '</div>' +
                     '<div class="qrext-fr-sets">' +
                         ungrouped.map(p =>
-                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + prmEsc(p.value) + '" data-folder="">' +
+                            '<div class="qrext-fr-set-item" draggable="true" data-set="' + prmEsc(p.text) + '" data-folder="">' +
                                 '<i class="fa-solid fa-grip-vertical qrext-fr-drag"></i>' +
                                 '<span>' + prmEsc(p.text) + '</span>' +
                             '</div>'
@@ -2648,7 +2671,11 @@
 
         listEl.innerHTML = html || '<div class="qrext-empty-hint">Preset이 없습니다.</div>';
         bindPresetFolderEvents(popup);
-        if (prmEnabled) prmRebuildDropdown(); else prmRemoveDropdown();
+        if (prmEnabled) {
+            if (!document.getElementById('prm-custom-dropdown')) prmInstallDropdown();
+        } else {
+            prmRemoveDropdown();
+        }
     }
 
     function bindPresetFolderEvents(popup) {
@@ -2687,7 +2714,12 @@
                 const fname = btn.dataset.fname;
                 if (!confirm('폴더 "' + fname + '"를 삭제할까요? (Preset은 미분류로 이동됩니다)')) return;
                 delete prmFolders[fname];
+                prmFolderOrder = prmFolderOrder.filter(n => n !== fname);
+                prmFolded.delete('popup_' + fname);
+                prmFolded.delete(fname);
                 prmSaveFolders();
+                prmSaveFolderOrder();
+                prmSaveFolded();
                 refreshPresetFolderList(popup);
             });
         });
@@ -2776,10 +2808,17 @@
     function openPresetPickModal(fname, popup) {
         if (document.getElementById('prm-pick-modal')) return;
         const allPresets = prmGetAllPresets();
-        const already    = new Set(prmFolders[fname] || []);
-        const inOther    = new Set();
-        Object.entries(prmFolders).forEach(([f, vals]) => { if (f === fname) return; vals.forEach(v => inOther.add(v)); });
-        const pickable   = allPresets.filter(p => !inOther.has(p.value));
+        const allPresetsForModal = prmGetAllPresets();
+        const storedVals = new Set(prmFolders[fname] || []);
+        const already = new Set(
+            allPresetsForModal.filter(p => storedVals.has(p.text) || storedVals.has(p.value)).map(p => p.text)
+        );
+        const inOtherRaw = new Set();
+        Object.entries(prmFolders).forEach(([f, vals]) => { if (f === fname) return; vals.forEach(v => inOtherRaw.add(v)); });
+        const inOtherTexts = new Set(
+            allPresets.filter(p => inOtherRaw.has(p.text) || inOtherRaw.has(p.value)).map(p => p.text)
+        );
+        const pickable = allPresets.filter(p => !inOtherTexts.has(p.text) && !already.has(p.text));
 
         const modal = document.createElement('div');
         modal.id = 'prm-pick-modal';
@@ -2796,8 +2835,8 @@
             const filtered = pickable.filter(p => !q || p.text.toLowerCase().includes(q));
             const listHtml = filtered.length
                 ? filtered.map(p =>
-                    '<div class="qrext-set-pick-item' + (already.has(p.value) ? ' qrext-pick-selected' : '') + '" data-value="' + prmEsc(p.value) + '">' +
-                        '<i class="fa-solid ' + (already.has(p.value) ? 'fa-check' : 'fa-plus') + ' qrext-pick-icon"></i>' +
+                    '<div class="qrext-set-pick-item' + (already.has(p.text) ? ' qrext-pick-selected' : '') + '" data-value="' + prmEsc(p.value) + '" data-text="' + prmEsc(p.text) + '">' +
+                        '<i class="fa-solid ' + (already.has(p.text) ? 'fa-check' : 'fa-plus') + ' qrext-pick-icon"></i>' +
                         prmEsc(p.text) +
                     '</div>'
                 ).join('')
@@ -2831,13 +2870,14 @@
                 item.addEventListener('click', e => {
                     e.stopPropagation();
                     const val = item.dataset.value;
+                    const txt = item.dataset.text;
                     if (!prmFolders[fname]) prmFolders[fname] = [];
-                    if (already.has(val)) {
-                        prmFolders[fname] = prmFolders[fname].filter(v => v !== val);
-                        already.delete(val);
+                    if (already.has(txt)) {
+                        prmFolders[fname] = prmFolders[fname].filter(v => v !== txt);
+                        already.delete(txt);
                     } else {
-                        prmFolders[fname].push(val);
-                        already.add(val);
+                        prmFolders[fname].push(txt);
+                        already.add(txt);
                     }
                     prmSaveFolders();
                     refreshPresetFolderList(popup);
